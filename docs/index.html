@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Интерактивная схема: как MikroTik CHR, WireGuard и изолированная сеть защищают доступ к удалённому серверу">
+<title>Сеть CHR и VPN</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow reading column; the interactive network scene is the centrepiece, sections stay plain. */
+:root{
+  color-scheme:light; --bg:#eef1f4; --surface:#ffffff; --surface2:#e4e9ee; --line:#c5cdd6;
+  --fg:#131a21; --muted:#52606c; --accent:#1f5fbf;
+  --ok:#1b7f4b; --deny:#c23a2b; --warn:#a8680a; --enc:#6a3fc4;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1317; --surface:#161d23; --surface2:#1e272f; --line:#2d3944;
+    --fg:#e6ebef; --muted:#94a2ae; --accent:#6aa4ff;
+    --ok:#4cc58a; --deny:#ff7a6b; --warn:#e8a93d; --enc:#aa8cff; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1317; --surface:#161d23; --surface2:#1e272f; --line:#2d3944;
+  --fg:#e6ebef; --muted:#94a2ae; --accent:#6aa4ff;
+  --ok:#4cc58a; --deny:#ff7a6b; --warn:#e8a93d; --enc:#aa8cff; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font); font-size:16px; line-height:1.55;
+  padding-block:32px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0 0 12px;font-weight:600;text-wrap:balance}
+h2{font-size:22px;margin:0 0 6px;font-weight:600;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--muted);max-width:64ch}
+.sec-note{color:var(--muted);max-width:64ch;margin-bottom:16px}
+code,.mono{font-family:var(--mono);font-size:.9em}
+
+/* analogy */
+.analogy{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:20px}
+.analogy div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-width:0}
+.analogy b{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:500}
+
+/* scene */
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tab{font:inherit;font-size:14px;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.tab[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.scene{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow-x:auto}
+.scene svg{display:block;width:100%;min-width:700px;height:auto}
+.caption{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-height:150px}
+.cap-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:4px;border:1px solid currentColor;text-transform:uppercase;letter-spacing:.05em}
+.badge.ok{color:var(--ok)} .badge.deny{color:var(--deny)} .badge.warn{color:var(--warn)} .badge.enc{color:var(--enc)} .badge.info{color:var(--accent)}
+.cap-title{font-weight:600;font-size:18px}
+.cap-text{color:var(--fg);max-width:75ch}
+.cap-text ol{margin:6px 0 0;padding-left:22px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.btn{font:inherit;font-size:14px;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.dots{display:flex;gap:6px;margin-left:auto;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.stepno{font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+/* svg theming */
+.wire{stroke:var(--muted);stroke-width:2.5;fill:none}
+.node rect{fill:var(--surface2);stroke:var(--line);stroke-width:1.5;transition:stroke .2s,fill .2s}
+.node.hl rect{stroke:var(--accent);stroke-width:3}
+.node.down rect{stroke:var(--deny);stroke-dasharray:6 4;fill:var(--surface)}
+.node.down text{opacity:.55}
+.nt{fill:var(--fg);font-family:var(--font);font-size:15px;font-weight:600;text-anchor:middle}
+.ns{fill:var(--muted);font-family:var(--mono);font-size:12px;text-anchor:middle}
+.lbl{fill:var(--muted);font-family:var(--mono);font-size:12px}
+.pipe{fill:var(--surface2);stroke:var(--enc);stroke-width:2;transition:all .2s}
+.pipe.broken{stroke:var(--deny);stroke-dasharray:6 5;fill:var(--surface)}
+.pipe.hl{fill:var(--enc);fill-opacity:.18}
+.ptxt{font-family:var(--mono);font-size:12px;text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+
+/* sections */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.card h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.card .real{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px;display:block}
+.card p{font-size:15px}
+.layers{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.layer{display:grid;grid-template-columns:150px 1fr;gap:6px 18px;padding:14px 16px;border-top:1px solid var(--line)}
+.layer:first-child{border-top:0}
+.layer b{font-weight:600}
+.layer span{color:var(--muted);font-size:15px}
+@media (max-width:560px){.layer{grid-template-columns:1fr}}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 28px}
+.gloss dt{font-weight:600}
+.gloss dd{margin:0 0 6px;color:var(--muted);font-size:15px}
+.cmds{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+.cmds table{border-collapse:collapse;width:100%;min-width:480px}
+.cmds td{padding:10px 16px;border-top:1px solid var(--line);vertical-align:top;font-size:15px}
+.cmds tr:first-child td{border-top:0}
+.cmds td:first-child{font-family:var(--mono);font-size:13px;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Как работает защищённая сеть с CHR и VPN</h1>
+  <p class="lead">Ниже схема вашей лаборатории и четыре истории про то, что происходит с пакетами: что пропускают, что блокируют и что случается, когда VPN падает. Нажимайте «Дальше» и смотрите, как пакет идёт по сети.</p>
+  <div class="analogy">
+    <div><b>Локальная сеть</b>Офис с закрытой дверью. Заходят только свои сотрудники, чужие внутрь не попадают.</div>
+    <div><b>CHR</b>Охранник на единственном входе. Проверяет каждого по списку и записывает отказы в журнал.</div>
+    <div><b>WireGuard</b>Бронированный тоннель в филиал. Снаружи не видно, что по нему едет.</div>
+    <div><b>Сервер</b>Сейф в филиале. Открывается только одному ключу, и только через две двери: SSH и HTTPS.</div>
+    <div><b>Fail closed</b>Если тоннель закрыт, охранник не пускает «в обход по улице». Дверь просто заперта.</div>
+  </div>
+</header>
+
+<section aria-labelledby="scene-h">
+  <h2 id="scene-h">Схема в движении</h2>
+  <p class="sec-note">Зелёный пакет проходит, красный упирается в запрет, фиолетовый едет внутри зашифрованного тоннеля.</p>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <div class="scene">
+  <svg viewBox="0 0 900 500" role="img" aria-label="Схема сети: клиенты, CHR, тоннель WireGuard, удалённый шлюз и сервер">
+    <!-- wires -->
+    <g class="wire">
+      <path d="M495 58V130"/>
+      <path d="M765 58V130"/>
+      <path d="M365 130H765"/>
+      <path d="M365 130V200"/>
+      <path d="M625 130V200"/>
+      <path d="M150 198H210M150 290H210M150 400H210"/>
+      <path d="M210 198V400"/>
+      <path d="M210 255H290"/>
+      <path d="M365 310V420"/>
+      <path d="M690 255H725M725 195V315M725 195H760M725 315H760"/>
+    </g>
+    <text class="lbl" x="505" y="100">NAT хоста</text>
+    <text class="lbl" x="400" y="152">br-wan · 192.168.100.0/24</text>
+    <text class="lbl" x="222" y="340">br-lan · 10.50.0.0/24</text>
+    <text class="lbl" x="376" y="372">br-mgmt</text>
+    <text class="lbl" x="560" y="372">br-remote · 10.60.0.0/24</text>
+
+    <!-- tunnel -->
+    <rect id="n-tun" class="pipe" x="440" y="240" width="120" height="30" rx="15"/>
+    <text class="ns" x="500" y="260" style="fill:var(--enc)">WireGuard</text>
+
+    <!-- nodes -->
+    <g class="node" id="n-net"><rect x="420" y="14" width="150" height="44" rx="6"/><text class="nt" x="495" y="42">Интернет</text></g>
+    <g class="node" id="n-out"><rect x="690" y="14" width="150" height="44" rx="6"/><text class="nt" x="765" y="42">Чужой снаружи</text></g>
+    <g class="node" id="n-chr"><rect x="290" y="200" width="150" height="110" rx="8"/>
+      <text class="nt" x="365" y="240">MikroTik CHR</text><text class="ns" x="365" y="262">firewall · NAT</text><text class="ns" x="365" y="280">DHCP · DNS</text></g>
+    <g class="node" id="n-rgw"><rect x="560" y="200" width="130" height="110" rx="8"/>
+      <text class="nt" x="625" y="240">Шлюз rgw</text><text class="ns" x="625" y="262">удалённая</text><text class="ns" x="625" y="280">сторона</text></g>
+    <g class="node" id="n-srv"><rect x="760" y="160" width="130" height="70" rx="6"/><text class="nt" x="825" y="190">Сервер</text><text class="ns" x="825" y="210">10.60.0.10</text></g>
+    <g class="node" id="n-dec"><rect x="760" y="280" width="130" height="70" rx="6"/><text class="nt" x="825" y="310">Сосед</text><text class="ns" x="825" y="330">10.60.0.20</text></g>
+    <g class="node" id="n-c1"><rect x="30" y="170" width="120" height="56" rx="6"/><text class="nt" x="90" y="195">client1</text><text class="ns" x="90" y="213">10.50.0.10</text></g>
+    <g class="node" id="n-c2"><rect x="30" y="262" width="120" height="56" rx="6"/><text class="nt" x="90" y="287">client2</text><text class="ns" x="90" y="305">10.50.0.11</text></g>
+    <g class="node" id="n-rog"><rect x="30" y="372" width="120" height="56" rx="6"/><text class="nt" x="90" y="397">Чужая ВМ</text><text class="ns" x="90" y="415">неизвестный MAC</text></g>
+    <g class="node" id="n-host"><rect x="290" y="420" width="150" height="60" rx="6"/><text class="nt" x="365" y="448">Ваш компьютер</text><text class="ns" x="365" y="466">админ 172.31.0.1</text></g>
+
+    <g id="fx"></g>
+  </svg>
+  </div>
+
+  <div class="caption" aria-live="polite">
+    <div class="cap-top"><span class="badge" id="cap-badge"></span><span class="cap-title" id="cap-title"></span></div>
+    <div class="cap-text" id="cap-text"></div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="b-prev" type="button">Назад</button>
+    <button class="btn primary" id="b-next" type="button">Дальше</button>
+    <button class="btn" id="b-replay" type="button">Ещё раз</button>
+    <button class="btn" id="b-auto" type="button">Показать всё сама</button>
+    <div class="dots" id="dots"></div>
+    <span class="stepno" id="stepno"></span>
+  </div>
+</section>
+
+<section aria-labelledby="parts-h">
+  <h2 id="parts-h">Из чего всё состоит</h2>
+  <p class="sec-note">В лаборатории всё это виртуальные машины на одном компьютере. Позже «удалённая сторона» станет вашим настоящим сервером.</p>
+  <div class="cards">
+    <div class="card"><h3>Ваш компьютер</h3><span class="real">Arch · QEMU/KVM</span><p>Запускает все ВМ, соединяет их виртуальными кабелями (мосты) и даёт CHR выход в интернет. К сети клиентов намеренно не подключён.</p></div>
+    <div class="card"><h3>MikroTik CHR</h3><span class="real">маршрутизатор в ВМ</span><p>Единственная дверь между клиентами, интернетом и VPN. Здесь все правила: что пускать, что блокировать, что писать в журнал.</p></div>
+    <div class="card"><h3>Удалённая сторона</h3><span class="real">ВМ rgw + rsrv</span><p>Шлюз с WireGuard и сервер с SSH и HTTPS. Имитируют ваш будущий настоящий сервер и повторяют те же ограничения.</p></div>
+    <div class="card"><h3>Клиенты</h3><span class="real">client1, client2</span><p>Обычные пользователи изолированной сети. С них запускаются проверки: доступ к серверу, запреты, отказ при падении VPN.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="layers-h">
+  <h2 id="layers-h">Пять слоёв защиты</h2>
+  <p class="sec-note">Если один слой дал сбой, следующий всё равно держит.</p>
+  <div class="layers">
+    <div class="layer"><b>1. Мост хоста</b><span>Кадры от неизвестных устройств в сеть клиентов не пропускаются. Каждый порт привязан к своему MAC. Клиенты друг с другом напрямую не говорят.</span></div>
+    <div class="layer"><b>2. Хост</b><span>У хоста нет адреса в сети клиентов. Пересылает он только трафик в интернет, поэтому через него CHR не обойти.</span></div>
+    <div class="layer"><b>3. CHR</b><span>По умолчанию всё запрещено. Разрешены только перечисленные клиенты, один сервер и два порта. Подделка адресов режется на входе, отказы пишутся в журнал.</span></div>
+    <div class="layer"><b>4. WireGuard</b><span>Шифрование и ключи. Пиру разрешены только два адреса: шлюз и сервер. Всё остальное через тоннель не пройдёт.</span></div>
+    <div class="layer"><b>5. Шлюз rgw</b><span>Повторная проверка на другом конце тоннеля: тот же один сервер и те же порты.</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="gl-h">
+  <h2 id="gl-h">Слова, которые встречаются</h2>
+  <dl class="gloss">
+    <div><dt>Мост (bridge)</dt><dd>Виртуальный коммутатор в Linux. К нему подключаются виртуальные кабели ВМ.</dd></div>
+    <div><dt>TAP</dt><dd>Виртуальный «разъём» для одной ВМ. Одним концом в мост, другим в сетевую карту ВМ.</dd></div>
+    <div><dt>NAT</dt><dd>Подмена адреса отправителя на адрес выхода. Так внутренние адреса выходят в интернет.</dd></div>
+    <div><dt>WireGuard</dt><dd>Современный VPN: зашифрованный тоннель между двумя узлами по ключам.</dd></div>
+    <div><dt>Fail closed</dt><dd>При поломке защиты система закрывается, а не открывается. Нет VPN значит нет доступа.</dd></div>
+    <div><dt>Netwatch</dt><dd>Функция CHR, которая каждые 5 секунд пингует шлюз и включает или выключает маршрут.</dd></div>
+    <div><dt>Blackhole</dt><dd>Маршрут, который просто выбрасывает пакеты. Он удерживает трафик от ухода мимо VPN.</dd></div>
+    <div><dt>Anti-spoofing</dt><dd>Защита от подделки адреса отправителя: «я 10.50.0.10» принимается только из настоящей LAN.</dd></div>
+  </dl>
+</section>
+
+<section aria-labelledby="cmd-h">
+  <h2 id="cmd-h">Что делаете вы руками</h2>
+  <div class="cmds"><table>
+    <tr><td>./lab.sh up</td><td>Строит всю сеть и поднимает ВМ с VPN. Первый запуск скачивает образы.</td></tr>
+    <tr><td>./lab.sh status</td><td>Какие ВМ работают, жив ли тоннель, включён ли маршрут к серверу.</td></tr>
+    <tr><td>./lab.sh test</td><td>10 проверок из задания и отчёт в <span class="mono">reports/test-results.md</span>.</td></tr>
+    <tr><td>./lab.sh shell client1 '...'</td><td>Команда внутри клиента. Хост в LAN не ходит, поэтому так.</td></tr>
+    <tr><td>ssh admin@172.31.0.2</td><td>Управление CHR. Принимается только с хоста.</td></tr>
+    <tr><td>./lab.sh backup</td><td>Выгрузка конфигурации CHR без секретов в <span class="mono">docs/</span>.</td></tr>
+    <tr><td>./lab.sh down</td><td>Убирает ВМ, мосты и правила с вашего компьютера.</td></tr>
+  </table></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  var $=function(id){return document.getElementById(id)};
+  var fx=$('fx');
+
+  var P={
+    c1chr:[[90,198],[210,198],[210,255],[365,255]],
+    chrrgw:[[365,255],[625,255]],
+    rgwsrv:[[625,255],[725,255],[725,195],[825,195]],
+    back:[[825,195],[725,195],[725,255],[365,255],[210,255],[210,198],[90,198]],
+    c1net:[[90,198],[210,198],[210,255],[365,255],[365,130],[495,130],[495,36]],
+    outchr:[[765,36],[765,130],[365,130],[365,200]],
+    rogue:[[90,400],[200,400]],
+    hostlan:[[290,450],[230,450]],
+    hostchr:[[365,450],[365,255]],
+    ping:[[365,255],[500,255]],
+    chr:[[365,255]]
+  };
+
+  var S=[
+    {tab:'Клиент ходит на сервер',steps:[
+      {k:'ok',t:'Клиент отправляет запрос',x:'client1 открывает https://10.60.0.10. Пакет идёт по виртуальному кабелю br-lan к маршрутизатору CHR.',p:P.c1chr,l:'→ 10.60.0.10:443',hl:['c1']},
+      {k:'info',t:'CHR проверяет пакет',x:'Охранник сверяется со списком:<ol><li>Адрес отправителя действительно из 10.50.0.0/24 (защита от подделки).</li><li>Отправитель есть в списке разрешённых: .10 или .11.</li><li>Цель ровно 10.60.0.10, порт 22 или 443.</li><li>Тоннель жив, маршрут через него включён.</li></ol>Всё сошлось, пакет разрешён.',p:P.chr,hl:['chr']},
+      {k:'enc',t:'Пакет едет в зашифрованном тоннеле',x:'WireGuard упаковывает пакет и шифрует. Из CHR он выходит через WAN как обычный UDP на порт 51820. Кто бы ни смотрел на br-wan, содержимого он не увидит.',p:P.chrrgw,l:'зашифровано',hl:['tun']},
+      {k:'ok',t:'Шлюз расшифровывает и проверяет второй раз',x:'rgw достаёт исходный пакет и сам применяет правило: только сервер 10.60.0.10, только порты 22 и 443, только из сети клиентов. Затем отдаёт серверу.',p:P.rgwsrv,l:'→ :443',hl:['rgw','srv']},
+      {k:'ok',t:'Ответ возвращается',x:'Сервер отвечает. Ответ идёт обратно тем же путём и пропускается как продолжение уже начатого соединения. Новые соединения «снаружи внутрь» запрещены.',p:P.back,l:'ответ',hl:['c1']}
+    ]},
+    {tab:'Клиент лезет куда нельзя',steps:[
+      {k:'deny',t:'Другой компьютер удалённой сети',x:'client1 пробует зайти на соседа 10.60.0.20. Разрешён один адрес, остальная удалённая сеть закрыта. CHR выбрасывает пакет и пишет в журнал DENY-REMOTE.',p:P.c1chr,l:'→ 10.60.0.20:22',end:'x',hl:['chr','dec']},
+      {k:'deny',t:'Тот же сервер, но другой порт',x:'Пробуем RDP, порт 3389. Сервер его слушает, но правило разрешает только 22 и 443. Запись в журнале: DENY-RDP.',p:P.c1chr,l:'→ 10.60.0.10:3389',end:'x',hl:['chr']},
+      {k:'deny',t:'DNS мимо CHR',x:'Запрос к 8.8.8.8 напрямую запрещён, иначе DNS утекал бы в обход политики. Имена клиент спрашивает только у CHR. Запись: DNS-LEAK.',p:P.c1chr,l:'DNS → 8.8.8.8',end:'x',hl:['chr']},
+      {k:'ok',t:'Обычный интернет работает',x:'Веб (80 и 443), NTP и ping разрешены. Пакет уходит через NAT хоста. Запрещено только то, что не нужно по политике.',p:P.c1net,l:'сайт :443',hl:['net']}
+    ]},
+    {tab:'VPN упал: доступ закрыт',steps:[
+      {k:'warn',t:'Тоннель оборвался',x:'На удалённой стороне остановили WireGuard или пропал канал. Для проверки №8 мы делаем это командой на rgw.',p:P.chr,down:['rgw','tun']},
+      {k:'warn',t:'CHR замечает',x:'Netwatch каждые 5 секунд пингует адрес шлюза внутри тоннеля (10.200.0.1). Ответа нет.',p:P.ping,l:'ping 10.200.0.1',end:'x',down:['rgw','tun'],hl:['chr']},
+      {k:'info',t:'Маршрут к серверу отключается',x:'CHR выключает маршрут 10.60.0.10 через тоннель. Остаётся «чёрная дыра» на всю сеть 10.60.0.0/24: пакеты туда выбрасываются. Маршрута к серверу через интернет нет и появиться не может. Это и есть fail closed.',p:P.chr,down:['rgw','tun'],hl:['chr']},
+      {k:'deny',t:'Клиент пробует достучаться',x:'Пакет доходит до CHR и умирает в blackhole. В WAN он не уходит: tcpdump на br-wan покажет 0 пакетов к 10.60.x.x. Сервер защищён даже при поломке VPN.',p:P.c1chr,l:'→ 10.60.0.10:22',end:'x',down:['rgw','tun'],hl:['chr']},
+      {k:'ok',t:'Интернет при этом работает',x:'Отрезана только удалённая сеть. Обычный выход в интернет у клиента не пострадал.',p:P.c1net,l:'сайт :443',down:['rgw','tun']},
+      {k:'enc',t:'VPN вернулся: всё восстановилось само',x:'Шлюз снова отвечает на ping, netwatch включает маршрут обратно. Доступ возвращается без чьего-либо участия, обычно за 5–15 секунд.',p:P.chrrgw,l:'ping 10.200.0.1 ✓',hl:['tun','rgw']}
+    ]},
+    {tab:'Чужаки и подмены',steps:[
+      {k:'deny',t:'Кто-то снаружи стучится в CHR',x:'На WAN открыт только WireGuard, и только для адреса шлюза. SSH, WinBox и всё остальное дропается и пишется в журнал INPUT-DROP. Пройти из WAN в LAN тоже нельзя.',p:P.outchr,l:'SSH → CHR',end:'x',hl:['chr','out']},
+      {k:'deny',t:'Чужая ВМ подключилась к сети клиентов',x:'Мост хоста пропускает в br-lan только три известных порта (CHR и два клиента). Кадры незнакомого порта выбрасываются ещё до CHR. IP-адрес «из правильной подсети» не помогает.',p:P.rogue,l:'ARP / ping',end:'x',hl:['rog']},
+      {k:'deny',t:'Ваш компьютер пробует зайти в LAN',x:'У хоста нет адреса в br-lan и нет маршрута туда. Он обычный сосед по железу, но не участник сети. Проверка №6 это подтверждает.',p:P.hostlan,l:'ping 10.50.0.10',end:'x',hl:['host']},
+      {k:'ok',t:'А управление разрешено',x:'SSH и WinBox на CHR принимаются только с адреса хоста 172.31.0.1 и только по отдельному кабелю br-mgmt. Это единственный путь администратора.',p:P.hostchr,l:'ssh admin',hl:['host','chr']}
+    ]}
+  ];
+
+  var COLOR={ok:'var(--ok)',deny:'var(--deny)',warn:'var(--warn)',enc:'var(--enc)',info:'var(--accent)'};
+  var BADGE={ok:'Разрешено',deny:'Запрещено',warn:'Сбой',enc:'Шифрование',info:'Проверка'};
+  var NODES=['net','out','chr','rgw','srv','dec','c1','c2','rog','host'];
+
+  var sc=0, st=0, run=0, autoTimer=null, auto=false;
+
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e}
+  function clearFx(){while(fx.firstChild)fx.removeChild(fx.firstChild)}
+
+  function applyNodes(step){
+    var hl=step.hl||[], dn=step.down||[];
+    NODES.forEach(function(n){
+      var g=$('n-'+n); g.classList.toggle('hl',hl.indexOf(n)>-1); g.classList.toggle('down',dn.indexOf(n)>-1);
+    });
+    var t=$('n-tun');
+    t.classList.toggle('broken',dn.indexOf('tun')>-1);
+    t.classList.toggle('hl',hl.indexOf('tun')>-1);
+  }
+
+  function pulse(pt,color,id){
+    var c=el('circle',{cx:pt[0],cy:pt[1],r:8,style:'fill:none;stroke:'+color+';stroke-width:3'});
+    fx.appendChild(c);
+    var t0=null;
+    function f(ts){
+      if(id!==run)return; if(t0===null)t0=ts; var p=Math.min(1,(ts-t0)/1000);
+      c.setAttribute('r',8+p*40); c.setAttribute('opacity',1-p);
+      if(p<1)requestAnimationFrame(f);
+    }
+    requestAnimationFrame(f);
+  }
+
+  function animate(step,id,done){
+    var color=COLOR[step.k], pts=step.p;
+    if(pts.length===1){ pulse(pts[0],color,id); setTimeout(function(){if(id===run)done()},1000); return; }
+    var seg=[],total=0,i;
+    for(i=1;i<pts.length;i++){var d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(d);total+=d}
+    var dur=Math.max(1000,total/0.30);
+    var g=el('g',{}); var dot=el('circle',{r:9,style:'fill:'+color+';stroke:var(--surface);stroke-width:2'});
+    g.appendChild(dot);
+    var txt=null;
+    if(step.l){txt=el('text',{'class':'ptxt',style:'fill:'+color,y:-16});txt.textContent=step.l;g.appendChild(txt)}
+    fx.appendChild(g);
+    var t0=null;
+    function pos(p){
+      var dist=p*total,j=0;
+      while(j<seg.length-1&&dist>seg[j]){dist-=seg[j];j++}
+      var a=pts[j],b=pts[j+1],r=seg[j]?dist/seg[j]:1;
+      return [a[0]+(b[0]-a[0])*r,a[1]+(b[1]-a[1])*r];
+    }
+    function f(ts){
+      if(id!==run)return; if(t0===null)t0=ts;
+      var p=Math.min(1,(ts-t0)/dur), q=pos(p);
+      g.setAttribute('transform','translate('+q[0]+','+q[1]+')');
+      if(p<1){requestAnimationFrame(f);return}
+      var e=pts[pts.length-1];
+      if(step.end==='x'){
+        g.removeChild(dot);
+        var x=el('g',{transform:'translate(0,0)'});
+        x.appendChild(el('path',{d:'M-11 -11L11 11M11 -11L-11 11',style:'stroke:'+color+';stroke-width:5;stroke-linecap:round;fill:none'}));
+        g.insertBefore(x,g.firstChild);
+        pulse(e,color,id);
+      }else{
+        pulse(e,color,id);
+      }
+      setTimeout(function(){if(id===run)done()},900);
+    }
+    g.setAttribute('transform','translate('+pts[0][0]+','+pts[0][1]+')');
+    requestAnimationFrame(f);
+  }
+
+  function showStep(){
+    run++; var id=run;
+    var s=S[sc].steps[st];
+    clearFx(); applyNodes(s);
+    var b=$('cap-badge'); b.className='badge '+s.k; b.textContent=BADGE[s.k];
+    $('cap-title').textContent=s.t; $('cap-text').innerHTML=s.x;
+    $('stepno').textContent='Шаг '+(st+1)+' из '+S[sc].steps.length;
+    var dots=$('dots'); dots.innerHTML='';
+    S[sc].steps.forEach(function(_,i){var d=document.createElement('span');d.className='dot'+(i===st?' on':'');dots.appendChild(d)});
+    $('b-prev').disabled=st===0; $('b-next').disabled=st===S[sc].steps.length-1;
+    animate(s,id,function(){
+      if(auto){
+        autoTimer=setTimeout(function(){
+          if(st<S[sc].steps.length-1){st++;showStep()}else{setAuto(false)}
+        },1400);
+      }
+    });
+  }
+
+  function setAuto(v){
+    auto=v; clearTimeout(autoTimer);
+    $('b-auto').textContent=v?'Остановить':'Показать всё сама';
+  }
+
+  function build(){
+    var tabs=$('tabs');
+    S.forEach(function(s,i){
+      var b=document.createElement('button'); b.type='button'; b.className='tab'; b.setAttribute('role','tab');
+      b.setAttribute('aria-selected',i===sc?'true':'false'); b.textContent=s.tab;
+      b.addEventListener('click',function(){
+        setAuto(false); sc=i; st=0;
+        Array.prototype.forEach.call(tabs.children,function(c,j){c.setAttribute('aria-selected',j===i?'true':'false')});
+        showStep();
+      });
+      tabs.appendChild(b);
+    });
+    $('b-next').addEventListener('click',function(){setAuto(false);if(st<S[sc].steps.length-1){st++;showStep()}});
+    $('b-prev').addEventListener('click',function(){setAuto(false);if(st>0){st--;showStep()}});
+    $('b-replay').addEventListener('click',function(){setAuto(false);showStep()});
+    $('b-auto').addEventListener('click',function(){
+      if(auto){setAuto(false);return}
+      setAuto(true); st=0; showStep();
+    });
+    showStep();
+  }
+  build();
+})();
+</script>
+
+</body>
+</html>

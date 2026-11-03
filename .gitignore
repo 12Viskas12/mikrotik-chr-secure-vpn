@@ -1,0 +1,20 @@
+# local state: images, overlays, generated configs, keys, logs
+var/
+lab.env
+
+# never commit secrets or disk images
+*.key
+*.pub.local
+*psk*
+*.qcow2
+*.img
+*.iso
+*.zip
+*.backup
+tfstate*
+.env
+
+# rendered/unsanitised evidence
+evidence/raw/
+__pycache__/
+*.pyc

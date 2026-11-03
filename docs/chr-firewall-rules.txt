@@ -1,0 +1,32 @@
+ 0 comment=established/related chain=input action=accept connection-state=established,related,untracked
+ 1 comment=drop invalid chain=input action=drop connection-state=invalid
+ 2 comment=mgmt DHCP client reply chain=input action=accept protocol=udp in-interface=mgmt src-port=67 dst-port=68
+ 3 comment=SSH + WinBox only from admin host on mgmt chain=input action=accept protocol=tcp src-address-list=admin-hosts in-interface=mgmt dst-port=22,8291
+ 4 comment=ping from admin host chain=input action=accept protocol=icmp src-address-list=admin-hosts in-interface=mgmt
+ 5 comment=LAN DHCP server chain=input action=accept protocol=udp in-interface=lan dst-port=67
+ 6 comment=LAN DNS (udp) chain=input action=accept protocol=udp in-interface=lan dst-port=53
+ 7 comment=LAN DNS (tcp) chain=input action=accept protocol=tcp in-interface=lan dst-port=53
+ 8 comment=LAN ping to gateway chain=input action=accept protocol=icmp in-interface=lan limit=20,5:packet
+ 9 comment=WireGuard from the known peer only chain=input action=accept protocol=udp src-address=192.168.100.10 in-interface=wan dst-port=13231
+10 comment=VPN peer ping (monitor) chain=input action=accept protocol=icmp src-address=10.200.0.1 in-interface=wg-remote
+11 comment=DEFAULT DENY input chain=input action=drop log=yes log-prefix=INPUT-DROP 
+12 comment=established/related chain=forward action=accept connection-state=established,related,untracked
+13 comment=drop invalid chain=forward action=drop connection-state=invalid
+14 comment=no port-forwards from WAN chain=forward action=drop connection-state=new connection-nat-state=dstnat in-interface=wan
+15 comment=ALLOW LAN -> server TCP/22 chain=forward action=accept protocol=tcp dst-address=10.60.0.10 src-address-list=lan-authorized in-interface=lan out-interface=wg-remote dst-port=22
+16 comment=ALLOW LAN -> server TCP/443 chain=forward action=accept protocol=tcp dst-address=10.60.0.10 src-address-list=lan-authorized in-interface=lan out-interface=wg-remote dst-port=443
+17 comment=ALLOW LAN -> server ping chain=forward action=accept protocol=icmp dst-address=10.60.0.10 src-address-list=lan-authorized in-interface=lan out-interface=wg-remote
+18 comment=DENY LAN -> server TCP/3389 chain=forward action=drop protocol=tcp dst-address=10.60.0.10 in-interface=lan dst-port=3389 log=yes log-prefix=DENY-RDP 
+19 comment=DENY LAN -> rest of remote network (any) chain=forward action=drop dst-address=10.60.0.0/24 in-interface=lan log=yes log-prefix=DENY-REMOTE 
+20 comment=FAIL CLOSED: remote subnet never leaves via non-VPN interface chain=forward action=drop dst-address=10.60.0.0/24 out-interface-list=!VPN log=yes log-prefix=FAILCLOSED 
+21 comment=DENY WAN -> remote network (any) chain=forward action=drop dst-address=10.60.0.0/24 in-interface=wan log=yes log-prefix=DENY-WAN-REMOTE 
+22 comment=no new connections from VPN into LAN or elsewhere chain=forward action=drop in-interface=wg-remote log=yes log-prefix=DENY-VPN-IN 
+23 comment=no direct DNS to Internet chain=forward action=drop protocol=udp in-interface=lan out-interface=wan dst-port=53 log=yes log-prefix=DNS-LEAK 
+24 comment=no direct DNS to Internet (tcp) chain=forward action=drop protocol=tcp in-interface=lan out-interface=wan dst-port=53 log=yes log-prefix=DNS-LEAK 
+25 comment=no DNS-over-TLS bypass chain=forward action=drop protocol=tcp in-interface=lan out-interface=wan dst-port=853 log=yes log-prefix=DOT-BLOCK 
+26 comment=LAN -> Internet web chain=forward action=accept protocol=tcp in-interface=lan out-interface=wan dst-port=80,443
+27 comment=LAN -> Internet NTP chain=forward action=accept protocol=udp in-interface=lan out-interface=wan dst-port=123
+28 comment=LAN -> Internet ping chain=forward action=accept protocol=icmp in-interface=lan out-interface=wan
+29 comment=DEFAULT DENY forward chain=forward action=drop log=yes log-prefix=FWD-DROP 
+30 comment=router itself never sends remote-subnet traffic to WAN chain=output action=drop dst-address=10.60.0.0/24 out-interface-list=!VPN log=yes log-prefix=OUT-FAILCLOSED 
+

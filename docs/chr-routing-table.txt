@@ -1,0 +1,34 @@
+Flags: D - dynamic; X - disabled, I - inactive, A - active; 
+c - connect, s - static, r - rip, b - bgp, o - ospf, i - is-is, d - dhcp, v - vpn, m - modem, y - bgp-mpls-vpn; 
+H - hw-offloaded; + - ecmp 
+ 0  As   ;;; default via WAN
+         dst-address=0.0.0.0/0 routing-table=main pref-src="" 
+         gateway=192.168.100.1 immediate-gw=192.168.100.1%wan distance=1 
+         scope=30 target-scope=10 suppress-hw-offload=no 
+
+   DAc   dst-address=10.50.0.0/24 routing-table=main gateway=lan 
+         immediate-gw=lan distance=0 scope=10 suppress-hw-offload=no 
+         local-address=10.50.0.1%lan 
+
+ 1  As   ;;; failclosed-blackhole
+         dst-address=10.60.0.0/24 routing-table=main pref-src="" gateway="" 
+         blackhole immediate-gw="" distance=250 scope=30 target-scope=10 
+         suppress-hw-offload=no 
+
+ 2  As   ;;; vpn-route
+         dst-address=10.60.0.10/32 routing-table=main pref-src="" 
+         gateway=wg-remote immediate-gw=wg-remote distance=1 scope=30 
+         target-scope=10 suppress-hw-offload=no 
+
+   DAc   dst-address=10.200.0.0/24 routing-table=main gateway=wg-remote 
+         immediate-gw=wg-remote distance=0 scope=10 suppress-hw-offload=no 
+         local-address=10.200.0.2%wg-remote 
+
+   DAc   dst-address=172.31.0.0/24 routing-table=main gateway=mgmt 
+         immediate-gw=mgmt distance=0 scope=10 suppress-hw-offload=no 
+         local-address=172.31.0.2%mgmt 
+
+   DAc   dst-address=192.168.100.0/24 routing-table=main gateway=wan 
+         immediate-gw=wan distance=0 scope=10 suppress-hw-offload=no 
+         local-address=192.168.100.2%wan 
+

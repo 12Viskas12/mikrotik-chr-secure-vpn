@@ -1,0 +1,285 @@
+
+### Test run 20261103-123950
+
+### Test run 20261103-123950
+
+### Stage II - CHR WAN
+
+### Stage II - CHR WAN
+
+[PASS] S2-1 - CHR has WAN address 192.168.100.2
+[PASS] S2-1 - CHR has WAN address 192.168.100.2
+
+[PASS] S2-2 - CHR default route via 192.168.100.1
+[PASS] S2-2 - CHR default route via 192.168.100.1
+
+[PASS] S2-3 - CHR reaches the Internet (1.1.1.1)
+[PASS] S2-3 - CHR reaches the Internet (1.1.1.1)
+
+[PASS] S2-4 - NAT counter increments (masquerade works)
+[PASS] S2-4 - NAT counter increments (masquerade works)
+
+### 1. LAN -> Internet (policy: web, NTP, ping; DNS only via CHR)
+
+### 1. LAN -> Internet (policy: web, NTP, ping; DNS only via CHR)
+
+[PASS] 1a - client1 HTTPS to Internet
+[PASS] 1a - client1 HTTPS to Internet
+
+[PASS] 1b - client1 DNS via CHR (10.50.0.1)
+[PASS] 1b - client1 DNS via CHR (10.50.0.1)
+
+[PASS] 1c - client1 SMTP/25 to Internet
+[PASS] 1c - client1 SMTP/25 to Internet
+
+[PASS] 1d - client1 direct DNS to 8.8.8.8 (DNS leak)
+[PASS] 1d - client1 direct DNS to 8.8.8.8 (DNS leak)
+
+### 2. LAN -> Internal server 10.60.0.10 (SSH/HTTPS allowed)
+
+### 2. LAN -> Internal server 10.60.0.10 (SSH/HTTPS allowed)
+
+[PASS] 2a - client1 -> 10.60.0.10 TCP/22
+[PASS] 2a - client1 -> 10.60.0.10 TCP/22
+
+[PASS] 2b - client1 -> 10.60.0.10 TCP/443 (content check)
+[PASS] 2b - client1 -> 10.60.0.10 TCP/443 (content check)
+
+[PASS] 2c - client2 -> 10.60.0.10 TCP/22
+[PASS] 2c - client2 -> 10.60.0.10 TCP/22
+PING 10.60.0.10 (10.60.0.10) 56(84) bytes of data.
+64 bytes from 10.60.0.10: icmp_seq=1 ttl=62 time=1.22 ms
+64 bytes from 10.60.0.10: icmp_seq=2 ttl=62 time=2.02 ms
+
+--- 10.60.0.10 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 1.220/1.620/2.021/0.400 ms
+[PASS] 2d - client1 ping 10.60.0.10
+[PASS] 2d - client1 ping 10.60.0.10
+traceroute to 10.60.0.10 (10.60.0.10), 4 hops max, 60 byte packets
+ 1  10.50.0.1  0.316 ms  0.283 ms  0.339 ms
+ 2  * * *
+ 3  * * *
+ 4  * * *
+
+### 3. LAN -> other remote hosts / ports (denied)
+
+### 3. LAN -> other remote hosts / ports (denied)
+
+[PASS] 3a - client1 -> 10.60.0.10 TCP/3389
+[PASS] 3a - client1 -> 10.60.0.10 TCP/3389
+
+[PASS] 3b - client1 -> 10.60.0.20 TCP/22 (other host, same subnet)
+[PASS] 3b - client1 -> 10.60.0.20 TCP/22 (other host, same subnet)
+PING 10.60.0.20 (10.60.0.20) 56(84) bytes of data.
+
+--- 10.60.0.20 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1023ms
+[PASS] 3c - client1 ping 10.60.0.20
+[PASS] 3c - client1 ping 10.60.0.20
+PING 10.60.0.1 (10.60.0.1) 56(84) bytes of data.
+
+--- 10.60.0.1 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1004ms
+[PASS] 3d - client1 ping remote gateway 10.60.0.1
+[PASS] 3d - client1 ping remote gateway 10.60.0.1
+Starting Nmap 7.93 ( https://nmap.org ) at 2026-11-03 10:40 UTC
+Nmap scan report for 10.60.0.10
+Host is up (0.0025s latency).
+
+PORT     STATE    SERVICE
+22/tcp   open     ssh
+443/tcp  open     https
+3389/tcp filtered ms-wbt-server
+
+Nmap done: 1 IP address (1 host up) scanned in 1.31 seconds
+Starting Nmap 7.93 ( https://nmap.org ) at 2026-11-03 10:40 UTC
+Nmap scan report for 10.60.0.10
+Host is up (0.00096s latency).
+
+PORT     STATE    SERVICE
+22/tcp   open     ssh
+443/tcp  open     https
+3389/tcp filtered ms-wbt-server
+
+Nmap done: 1 IP address (1 host up) scanned in 1.28 seconds
+[PASS] 3e - nmap from client1: 22,443 open and 3389 filtered
+[PASS] 3e - nmap from client1: 22,443 open and 3389 filtered
+
+[PASS] 3f - CHR counted the denies (rule hit counters)
+[PASS] 3f - CHR counted the denies (rule hit counters)
+
+### 4/5. WAN -> LAN and WAN -> CHR management
+
+### 4/5. WAN -> LAN and WAN -> CHR management
+PING 10.50.0.10 (10.50.0.10) 56(84) bytes of data.
+
+--- 10.50.0.10 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1039ms
+[PASS] 4a - WAN host -> client1 via CHR WAN address (routed)
+[PASS] 4a - WAN host -> client1 via CHR WAN address (routed)
+PING 10.50.0.1 (10.50.0.1) 56(84) bytes of data.
+
+--- 10.50.0.1 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1041ms
+[PASS] 4b - WAN host -> LAN gateway 10.50.0.1
+[PASS] 4b - WAN host -> LAN gateway 10.50.0.1
+PING 10.50.0.10 (10.50.0.10) 56(84) bytes of data.
+
+--- 10.50.0.10 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1017ms
+[PASS] 4c - WAN host -> LAN via the Linux host (bypass attempt)
+[PASS] 4c - WAN host -> LAN via the Linux host (bypass attempt)
+Starting Nmap 7.993 ( https://nmap.org ) at 2026-11-03 12:40 +0200
+Nmap scan report for 192.168.100.2
+Host is up (0.00033s latency).
+
+PORT     STATE    SERVICE
+21/tcp   filtered ftp
+22/tcp   filtered ssh
+23/tcp   filtered telnet
+80/tcp   filtered http
+443/tcp  filtered https
+2000/tcp filtered cisco-sccp
+8291/tcp filtered winbox
+8728/tcp filtered unknown
+8729/tcp filtered unknown
+MAC Address: 52:54:00:00:01:02 (QEMU virtual NIC)
+
+Nmap done: 1 IP address (1 host up) scanned in 1.31 seconds
+[PASS] 5a - nmap WAN side of CHR: no open ports
+[PASS] 5a - nmap WAN side of CHR: no open ports
+
+[PASS] 5b - CHR WAN input drops were logged
+[PASS] 5b - CHR WAN input drops were logged
+exec of "nc" failed: No such file or directory
+[PASS] 5c - WAN host -> CHR mgmt address 172.31.0.2 (routed)
+[PASS] 5c - WAN host -> CHR mgmt address 172.31.0.2 (routed)
+exec of "nc" failed: No such file or directory
+[PASS] 5d - Foreign host on br-mgmt (not the admin address) -> CHR SSH
+[PASS] 5d - Foreign host on br-mgmt (not the admin address) -> CHR SSH
+exec of "nc" failed: No such file or directory
+[PASS] 5e - Foreign host on br-mgmt -> CHR WinBox 8291
+[PASS] 5e - Foreign host on br-mgmt -> CHR WinBox 8291
+
+[PASS] 5f - Admin host (172.31.0.1) -> CHR SSH works
+[PASS] 5f - Admin host (172.31.0.1) -> CHR SSH works
+
+[PASS] 5g - No unneeded services enabled on CHR
+[PASS] 5g - No unneeded services enabled on CHR
+
+### 6. Host -> LAN (no L3 path; only admin access to CHR mgmt)
+
+### 6. Host -> LAN (no L3 path; only admin access to CHR mgmt)
+PING 10.50.0.1 (10.50.0.1) 56(84) bytes of data.
+
+--- 10.50.0.1 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1023ms
+[PASS] 6a - Host ping CHR LAN address 10.50.0.1
+[PASS] 6a - Host ping CHR LAN address 10.50.0.1
+PING 10.50.0.10 (10.50.0.10) 56(84) bytes of data.
+
+--- 10.50.0.10 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1062ms
+[PASS] 6b - Host ping client1 10.50.0.10
+[PASS] 6b - Host ping client1 10.50.0.10
+scripts/run-tests.sh: line 30: nc: command not found
+[PASS] 6c - Host SSH probe client1 10.50.0.10:22
+[PASS] 6c - Host SSH probe client1 10.50.0.10:22
+
+[PASS] 6d - br-lan has no IPv4 address on the host
+[PASS] 6d - br-lan has no IPv4 address on the host
+
+### 7. Unauthorized VM (rogue port on br-lan) -> LAN
+
+### 7. Unauthorized VM (rogue port on br-lan) -> LAN
+PING 10.50.0.1 (10.50.0.1) 56(84) bytes of data.
+From 10.50.0.222 icmp_seq=1 Destination Host Unreachable
+From 10.50.0.222 icmp_seq=2 Destination Host Unreachable
+From 10.50.0.222 icmp_seq=3 Destination Host Unreachable
+
+--- 10.50.0.1 ping statistics ---
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2043ms
+pipe 3
+[PASS] 7a - Rogue with static IP in the LAN pings gateway
+[PASS] 7a - Rogue with static IP in the LAN pings gateway
+ARPING 10.50.0.1 from 10.50.0.222 p-rogue
+Sent 3 probes (3 broadcast(s))
+Received 0 response(s)
+[PASS] 7b - Rogue ARPs for gateway
+[PASS] 7b - Rogue ARPs for gateway
+PING 10.50.0.10 (10.50.0.10) 56(84) bytes of data.
+
+--- 10.50.0.10 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1033ms
+[PASS] 7c - Rogue reaches client1
+[PASS] 7c - Rogue reaches client1
+bridge drop counters: before=144 after=192
+[PASS] 7d - L2 allow-list counters on the host increased
+[PASS] 7d - L2 allow-list counters on the host increased
+
+### 10. Unauthorized access to the server / spoofing
+
+### 10. Unauthorized access to the server / spoofing
+
+[PASS] 10a - LAN address not in lan-authorized list (10.50.0.66) -> server 22
+[PASS] 10a - LAN address not in lan-authorized list (10.50.0.66) -> server 22
+
+[PASS] 10b - Spoofed source 10.99.9.9 from LAN -> Internet
+[PASS] 10b - Spoofed source 10.99.9.9 from LAN -> Internet
+
+[PASS] 10c - Anti-spoof raw rule hit counter
+[PASS] 10c - Anti-spoof raw rule hit counter
+PING 10.50.0.11 (10.50.0.11) 56(84) bytes of data.
+
+--- 10.50.0.11 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1028ms
+[PASS] 10d - Client1 -> client2 directly at L2 (isolated ports)
+[PASS] 10d - Client1 -> client2 directly at L2 (isolated ports)
+
+### 8. VPN disconnect: fail closed, no bypass through WAN
+
+### 8. VPN disconnect: fail closed, no bypass through WAN
+[1;34m[lab][0m VPN stopped on the remote gateway; waiting for netwatch (<= 25 s)
+route state: 2 Xs comment=vpn-route dst-address=10.60.0.10/32 gateway=wg-remote distance=1
+
+
+[PASS] 8a - CHR disabled the tunnel route after VPN loss
+[PASS] 8a - CHR disabled the tunnel route after VPN loss
+
+[PASS] 8b - client1 -> 10.60.0.10:22 while VPN is down
+[PASS] 8b - client1 -> 10.60.0.10:22 while VPN is down
+
+[PASS] 8c - client1 -> 10.60.0.10:443 while VPN is down
+[PASS] 8c - client1 -> 10.60.0.10:443 while VPN is down
+
+[PASS] 8d - client1 still has Internet (only the remote subnet is cut)
+[PASS] 8d - client1 still has Internet (only the remote subnet is cut)
+
+[PASS] 8e - blackhole route for the remote subnet is present
+[PASS] 8e - blackhole route for the remote subnet is present
+packets towards the remote subnet seen on br-wan while VPN was down: 0
+[PASS] 8f - Packet capture on br-wan: no remote-subnet traffic leaked
+[PASS] 8f - Packet capture on br-wan: no remote-subnet traffic leaked
+
+### 9. VPN reconnect
+
+### 9. VPN reconnect
+[PASS] 9a - Automatic recovery after the VPN returns
+[PASS] 9a - Automatic recovery after the VPN returns
+
+[PASS] 9b - WireGuard handshake is recent on the CHR
+[PASS] 9b - WireGuard handshake is recent on the CHR
+
+### Extras - encryption, DNS, IPv6
+
+### Extras - encryption, DNS, IPv6
+
+[PASS] E1 - Tunnel traffic on br-wan is WireGuard only (no plaintext marker)
+[PASS] E1 - Tunnel traffic on br-wan is WireGuard only (no plaintext marker)
+
+[PASS] E2 - IPv6: client1 has no default route / cannot reach IPv6 Internet
+[PASS] E2 - IPv6: client1 has no default route / cannot reach IPv6 Internet
+
+[PASS] E3 - DNS leak check: only the CHR answers (resolver is 10.50.0.1)
+[PASS] E3 - DNS leak check: only the CHR answers (resolver is 10.50.0.1)

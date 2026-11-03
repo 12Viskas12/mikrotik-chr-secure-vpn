@@ -1,0 +1,23 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: shellcheck
+        run: shellcheck -x lab.sh scripts/*.sh
+      - name: render templates with dummy values and validate nftables
+        run: |
+          sudo apt-get update && sudo apt-get install -y nftables wireguard-tools
+          mkdir -p var/keys
+          for n in chr rgw; do wg genkey | tee var/keys/$n.key | wg pubkey > var/keys/$n.pub; done
+          wg genpsk > var/keys/psk.key
+          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMM ci@lab" > /tmp/k.pub
+          printf 'ADMIN_PASSWORD=CiPass123\nSSH_PUBKEY_FILE=/tmp/k.pub\nUPLINK_IFACE=eth0\n' > lab.env
+          scripts/render.sh
+          sudo nft -c -f var/render/host.nft
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
