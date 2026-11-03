@@ -4,14 +4,6 @@ A fully scripted lab: a **MikroTik CHR** runs in QEMU/KVM, protects an **isolate
 
 Until a real server is available the remote side is simulated by two more VMs (remote gateway + server). Moving to the real server needs one setting, see [docs/deploy-on-server.md](docs/deploy-on-server.md).
 
-## Interactive scheme
-
-[![Interactive scheme preview](docs/img/scheme-preview.png)](https://12viskas12.github.io/mikrotik-chr-secure-vpn/)
-
-Step-by-step animation of the traffic: allowed access, blocked access, VPN failure (fail closed) and intruders.
-Live page: **https://12viskas12.github.io/mikrotik-chr-secure-vpn/** (GitHub Pages, source: `docs/index.html`).
-If your repository has another name, the URL is `https://<user>.github.io/<repo>/`.
-
 ## Architecture
 
 ```
