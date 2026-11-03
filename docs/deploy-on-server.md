@@ -5,7 +5,7 @@
 Needs a Linux server with KVM (bare metal or nested virtualisation), root/sudo, and Internet access.
 
 ```bash
-git clone <repo> && cd mikrotik-chr-vpn-lab
+git clone <repo> && cd mikrotik-chr-secure-vpn
 cp lab.env.example lab.env && $EDITOR lab.env     # ADMIN_PASSWORD, UPLINK_IFACE (server's public NIC)
 ./lab.sh deps && ./lab.sh up && ./lab.sh test
 ```
