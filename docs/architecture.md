@@ -4,17 +4,17 @@
 
 ```mermaid
 flowchart TB
-  NET[Internet / physical network] --> HOST[QEMU/KVM host<br/>nftables NAT]
+  NET[Internet / physical network] --> HOST["QEMU/KVM host<br/>nftables NAT<br/>admin address 172.31.0.1"]
+  HOST -.- BM[br-mgmt 172.31.0.0/24]
   HOST --- BW[br-wan 192.168.100.0/24]
-  BW --- CHRW[CHR wan .2]
-  BW --- RGWW[rgw wan .10]
-  HOST -. admin 172.31.0.1 .- BM[br-mgmt 172.31.0.0/24]
-  BM --- CHRM[CHR mgmt .2]
-  CHRL[CHR lan 10.50.0.1] --- BL[br-lan 10.50.0.0/24<br/>no host IP]
+  BM --- CHR["MikroTik CHR<br/>mgmt .2 / wan .2 / lan 10.50.0.1 / wg 10.200.0.2"]
+  BW --- CHR
+  CHR --- BL[br-lan 10.50.0.0/24<br/>no host IP]
   BL --- C1[client1 .10]
   BL --- C2[client2 .11]
-  CHRV[CHR wg-remote 10.200.0.2] == WireGuard ==> RGWV[rgw wg0 10.200.0.1]
-  RGWV --- BR[br-remote 10.60.0.0/24<br/>no host IP]
+  CHR ==> TUN(["WireGuard tunnel<br/>UDP 51820 via br-wan"])
+  TUN ==> RGW["Remote gateway rgw<br/>wan .10 / wg0 10.200.0.1"]
+  RGW --- BR[br-remote 10.60.0.0/24<br/>no host IP]
   BR --- SRV[server 10.60.0.10]
   BR --- DEC[decoy 10.60.0.20]
 ```
