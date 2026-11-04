@@ -2,30 +2,27 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark light">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Интерактивная схема: как MikroTik CHR, WireGuard и изолированная сеть защищают доступ к удалённому серверу">
 <title>Сеть CHR и VPN</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one narrow reading column; the interactive network scene is the centrepiece, sections stay plain. */
+/* GitHub-dark palette by default; the light variant is opt-in through the toggle button. */
 :root{
-  color-scheme:light; --bg:#eef1f4; --surface:#ffffff; --surface2:#e4e9ee; --line:#c5cdd6;
-  --fg:#131a21; --muted:#52606c; --accent:#1f5fbf;
-  --ok:#1b7f4b; --deny:#c23a2b; --warn:#a8680a; --enc:#6a3fc4;
+  color-scheme:dark;
+  --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --line:#30363d;
+  --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff;
+  --ok:#3fb950; --deny:#f85149; --warn:#d29922; --enc:#a371f7;
   --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0e1317; --surface:#161d23; --surface2:#1e272f; --line:#2d3944;
-    --fg:#e6ebef; --muted:#94a2ae; --accent:#6aa4ff;
-    --ok:#4cc58a; --deny:#ff7a6b; --warn:#e8a93d; --enc:#aa8cff; color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0e1317; --surface:#161d23; --surface2:#1e272f; --line:#2d3944;
-  --fg:#e6ebef; --muted:#94a2ae; --accent:#6aa4ff;
-  --ok:#4cc58a; --deny:#ff7a6b; --warn:#e8a93d; --enc:#aa8cff; color-scheme:dark;
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#ffffff; --surface:#f6f8fa; --surface2:#eaeef2; --line:#d0d7de;
+  --fg:#1f2328; --muted:#59636e; --accent:#0969da;
+  --ok:#1a7f37; --deny:#cf222e; --warn:#9a6700; --enc:#8250df;
 }
 *{box-sizing:border-box}
 body{
@@ -33,6 +30,7 @@ body{
   padding-block:32px 64px;
   padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
 }
+.topbar{display:flex;justify-content:flex-end;margin-bottom:8px}
 .wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
 h1{font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0 0 12px;font-weight:600;text-wrap:balance}
 h2{font-size:22px;margin:0 0 6px;font-weight:600;text-wrap:balance}
@@ -111,6 +109,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
 <div class="wrap">
 
 <header>
+  <div class="topbar"><button class="btn" id="b-theme" type="button">Светлая тема</button></div>
   <h1>Как работает защищённая сеть с CHR и VPN</h1>
   <p class="lead">Ниже схема вашей лаборатории и четыре истории про то, что происходит с пакетами: что пропускают, что блокируют и что случается, когда VPN падает. Нажимайте «Дальше» и смотрите, как пакет идёт по сети.</p>
   <div class="analogy">
@@ -245,6 +244,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
 
   var P={
     c1chr:[[90,198],[210,198],[210,255],[365,255]],
+    c1stop:[[90,198],[210,198],[210,255],[290,255]],
     chrrgw:[[365,255],[625,255]],
     rgwsrv:[[625,255],[725,255],[725,195],[825,195]],
     back:[[825,195],[725,195],[725,255],[365,255],[210,255],[210,198],[90,198]],
@@ -266,16 +266,16 @@ code,.mono{font-family:var(--mono);font-size:.9em}
       {k:'ok',t:'Ответ возвращается',x:'Сервер отвечает. Ответ идёт обратно тем же путём и пропускается как продолжение уже начатого соединения. Новые соединения «снаружи внутрь» запрещены.',p:P.back,l:'ответ',hl:['c1']}
     ]},
     {tab:'Клиент лезет куда нельзя',steps:[
-      {k:'deny',t:'Другой компьютер удалённой сети',x:'client1 пробует зайти на соседа 10.60.0.20. Разрешён один адрес, остальная удалённая сеть закрыта. CHR выбрасывает пакет и пишет в журнал DENY-REMOTE.',p:P.c1chr,l:'→ 10.60.0.20:22',end:'x',hl:['chr','dec']},
-      {k:'deny',t:'Тот же сервер, но другой порт',x:'Пробуем RDP, порт 3389. Сервер его слушает, но правило разрешает только 22 и 443. Запись в журнале: DENY-RDP.',p:P.c1chr,l:'→ 10.60.0.10:3389',end:'x',hl:['chr']},
-      {k:'deny',t:'DNS мимо CHR',x:'Запрос к 8.8.8.8 напрямую запрещён, иначе DNS утекал бы в обход политики. Имена клиент спрашивает только у CHR. Запись: DNS-LEAK.',p:P.c1chr,l:'DNS → 8.8.8.8',end:'x',hl:['chr']},
+      {k:'deny',t:'Другой компьютер удалённой сети',x:'client1 пробует зайти на соседа 10.60.0.20. Разрешён один адрес, остальная удалённая сеть закрыта. CHR выбрасывает пакет и пишет в журнал DENY-REMOTE.',p:P.c1stop,l:'→ 10.60.0.20:22',end:'x',lx:-62,hl:['chr','dec']},
+      {k:'deny',t:'Тот же сервер, но другой порт',x:'Пробуем RDP, порт 3389. Сервер его слушает, но правило разрешает только 22 и 443. Запись в журнале: DENY-RDP.',p:P.c1stop,l:'→ 10.60.0.10:3389',end:'x',lx:-62,hl:['chr']},
+      {k:'deny',t:'DNS мимо CHR',x:'Запрос к 8.8.8.8 напрямую запрещён, иначе DNS утекал бы в обход политики. Имена клиент спрашивает только у CHR. Запись: DNS-LEAK.',p:P.c1stop,l:'DNS → 8.8.8.8',end:'x',lx:-62,hl:['chr']},
       {k:'ok',t:'Обычный интернет работает',x:'Веб (80 и 443), NTP и ping разрешены. Пакет уходит через NAT хоста. Запрещено только то, что не нужно по политике.',p:P.c1net,l:'сайт :443',hl:['net']}
     ]},
     {tab:'VPN упал: доступ закрыт',steps:[
       {k:'warn',t:'Тоннель оборвался',x:'На удалённой стороне остановили WireGuard или пропал канал. Для проверки №8 мы делаем это командой на rgw.',p:P.chr,down:['rgw','tun']},
       {k:'warn',t:'CHR замечает',x:'Netwatch каждые 5 секунд пингует адрес шлюза внутри тоннеля (10.200.0.1). Ответа нет.',p:P.ping,l:'ping 10.200.0.1',end:'x',down:['rgw','tun'],hl:['chr']},
       {k:'info',t:'Маршрут к серверу отключается',x:'CHR выключает маршрут 10.60.0.10 через тоннель. Остаётся «чёрная дыра» на всю сеть 10.60.0.0/24: пакеты туда выбрасываются. Маршрута к серверу через интернет нет и появиться не может. Это и есть fail closed.',p:P.chr,down:['rgw','tun'],hl:['chr']},
-      {k:'deny',t:'Клиент пробует достучаться',x:'Пакет доходит до CHR и умирает в blackhole. В WAN он не уходит: tcpdump на br-wan покажет 0 пакетов к 10.60.x.x. Сервер защищён даже при поломке VPN.',p:P.c1chr,l:'→ 10.60.0.10:22',end:'x',down:['rgw','tun'],hl:['chr']},
+      {k:'deny',t:'Клиент пробует достучаться',x:'Пакет доходит до CHR и умирает в blackhole. В WAN он не уходит: tcpdump на br-wan покажет 0 пакетов к 10.60.x.x. Сервер защищён даже при поломке VPN.',p:P.c1stop,l:'→ 10.60.0.10:22',end:'x',lx:-62,down:['rgw','tun'],hl:['chr']},
       {k:'ok',t:'Интернет при этом работает',x:'Отрезана только удалённая сеть. Обычный выход в интернет у клиента не пострадал.',p:P.c1net,l:'сайт :443',down:['rgw','tun']},
       {k:'enc',t:'VPN вернулся: всё восстановилось само',x:'Шлюз снова отвечает на ping, netwatch включает маршрут обратно. Доступ возвращается без чьего-либо участия, обычно за 5–15 секунд.',p:P.chrrgw,l:'ping 10.200.0.1 ✓',hl:['tun','rgw']}
     ]},
@@ -327,7 +327,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     var g=el('g',{}); var dot=el('circle',{r:9,style:'fill:'+color+';stroke:var(--surface);stroke-width:2'});
     g.appendChild(dot);
     var txt=null;
-    if(step.l){txt=el('text',{'class':'ptxt',style:'fill:'+color,y:-16});txt.textContent=step.l;g.appendChild(txt)}
+    if(step.l){txt=el('text',{'class':'ptxt',style:'fill:'+color,y:-16,x:step.lx||0});txt.textContent=step.l;g.appendChild(txt)}
     fx.appendChild(g);
     var t0=null;
     function pos(p){
@@ -370,7 +370,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     animate(s,id,function(){
       if(auto){
         autoTimer=setTimeout(function(){
-          if(st<S[sc].steps.length-1){st++;showStep()}else{setAuto(false)}
+          if(st<S[sc].steps.length-1){st++;showStep()}else{sc=(sc+1)%S.length;st=0;syncTabs();showStep()}
         },1400);
       }
     });
@@ -381,7 +381,21 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     $('b-auto').textContent=v?'Остановить':'Показать всё сама';
   }
 
+  function syncTabs(){
+    Array.prototype.forEach.call($('tabs').children,function(c,j){c.setAttribute('aria-selected',j===sc?'true':'false')});
+  }
+  function setTheme(t){
+    document.documentElement.setAttribute('data-theme',t);
+    $('b-theme').textContent=t==='dark'?'Светлая тема':'Тёмная тема';
+    try{localStorage.setItem('chr-theme',t)}catch(e){}
+  }
+
   function build(){
+    var saved=null; try{saved=localStorage.getItem('chr-theme')}catch(e){}
+    setTheme(saved==='light'?'light':'dark');
+    $('b-theme').addEventListener('click',function(){
+      setTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
+    });
     var tabs=$('tabs');
     S.forEach(function(s,i){
       var b=document.createElement('button'); b.type='button'; b.className='tab'; b.setAttribute('role','tab');
@@ -400,6 +414,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
       if(auto){setAuto(false);return}
       setAuto(true); st=0; showStep();
     });
+    setAuto(true);
     showStep();
   }
   build();
