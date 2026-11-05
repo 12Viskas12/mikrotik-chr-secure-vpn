@@ -6,11 +6,11 @@ Until a real server is available the remote side is simulated by two more VMs (r
 
 ## Interactive scheme
 
-[![Interactive scheme preview](docs/img/scheme-preview.png)](https://12viskas12.github.io/mikrotik-chr-secure-vpn/)
+The animation below plays all four scenarios automatically: a client reaching the server through the tunnel, a client trying to reach what is forbidden, the VPN going down (fail closed), and intruders/spoofing.
 
-Step-by-step animation of the traffic: allowed access, blocked access, VPN failure (fail closed) and intruders.
-Live page: **https://12viskas12.github.io/mikrotik-chr-secure-vpn/** (GitHub Pages, source: `docs/index.html`).
-If your repository has another name, the URL is `https://<user>.github.io/<repo>/`.
+![How the lab works: animated scheme](docs/img/scheme.gif)
+
+Want to click through step by step? Open the [interactive version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/) (GitHub Pages) or `docs/index.html` locally.
 
 ## Architecture
 
@@ -42,7 +42,7 @@ Details: [docs/architecture.md](docs/architecture.md) · [docs/qemu-config.md](d
 ## Quick start (Arch Linux; Debian/Ubuntu also supported)
 
 ```bash
-git clone <this repo> && cd mikrotik-chr-secure-vpn
+git clone <this repo> && cd mikrotik-chr-vpn-lab
 cp lab.env.example lab.env && $EDITOR lab.env   # set ADMIN_PASSWORD (letters+digits)
 ./lab.sh deps        # installs qemu, nftables, dnsmasq, wireguard-tools, ...
 sudo usermod -aG kvm "$USER"                      # once, then log out/in

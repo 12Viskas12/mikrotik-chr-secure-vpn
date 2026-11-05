@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="dark light">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Интерактивная схема: как MikroTik CHR, WireGuard и изолированная сеть защищают доступ к удалённому серверу">
-<title>Сеть CHR и VPN</title>
+<meta name="description" content="Interactive scheme: how MikroTik CHR, WireGuard and an isolated LAN work together">
+<title>CHR and VPN network</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one narrow reading column; the interactive network scene is the centrepiece, sections stay plain. */
@@ -109,26 +109,26 @@ code,.mono{font-family:var(--mono);font-size:.9em}
 <div class="wrap">
 
 <header>
-  <div class="topbar"><button class="btn" id="b-theme" type="button">Светлая тема</button></div>
-  <h1>Как работает защищённая сеть с CHR и VPN</h1>
-  <p class="lead">Ниже схема вашей лаборатории и четыре истории про то, что происходит с пакетами: что пропускают, что блокируют и что случается, когда VPN падает. Нажимайте «Дальше» и смотрите, как пакет идёт по сети.</p>
+  <div class="topbar"><button class="btn" id="b-theme" type="button">Light theme</button></div>
+  <h1>How the secure CHR + VPN network works</h1>
+  <p class="lead">Below is a diagram of the lab and four stories about what happens to packets: what is allowed, what is blocked, and what happens when the VPN goes down. Press "Next" and watch the packet travel.</p>
   <div class="analogy">
-    <div><b>Локальная сеть</b>Офис с закрытой дверью. Заходят только свои сотрудники, чужие внутрь не попадают.</div>
-    <div><b>CHR</b>Охранник на единственном входе. Проверяет каждого по списку и записывает отказы в журнал.</div>
-    <div><b>WireGuard</b>Бронированный тоннель в филиал. Снаружи не видно, что по нему едет.</div>
-    <div><b>Сервер</b>Сейф в филиале. Открывается только одному ключу, и только через две двери: SSH и HTTPS.</div>
-    <div><b>Fail closed</b>Если тоннель закрыт, охранник не пускает «в обход по улице». Дверь просто заперта.</div>
+    <div><b>Local network</b>An office with a locked door. Only staff get in; strangers stay out.</div>
+    <div><b>CHR</b>A guard at the only entrance. Checks everyone against a list and logs every refusal.</div>
+    <div><b>WireGuard</b>An armoured tunnel to the branch office. Nobody outside can see what travels inside.</div>
+    <div><b>Server</b>A safe in the branch. It opens for one key only, through two doors: SSH and HTTPS.</div>
+    <div><b>Fail closed</b>If the tunnel is closed, the guard does not let anyone go "round by the street". The door is simply locked.</div>
   </div>
 </header>
 
 <section aria-labelledby="scene-h">
-  <h2 id="scene-h">Схема в движении</h2>
-  <p class="sec-note">Зелёный пакет проходит, красный упирается в запрет, фиолетовый едет внутри зашифрованного тоннеля.</p>
+  <h2 id="scene-h">The scheme in motion</h2>
+  <p class="sec-note">A green packet passes, a red one hits a block, a purple one travels inside the encrypted tunnel.</p>
 
   <div class="tabs" role="tablist" id="tabs"></div>
 
   <div class="scene">
-  <svg viewBox="0 0 900 500" role="img" aria-label="Схема сети: клиенты, CHR, тоннель WireGuard, удалённый шлюз и сервер">
+  <svg viewBox="0 0 900 500" role="img" aria-label="Network diagram: clients, CHR, WireGuard tunnel, remote gateway and server">
     <!-- wires -->
     <g class="wire">
       <path d="M495 58V130"/>
@@ -142,7 +142,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
       <path d="M365 310V420"/>
       <path d="M690 255H725M725 195V315M725 195H760M725 315H760"/>
     </g>
-    <text class="lbl" x="505" y="100">NAT хоста</text>
+    <text class="lbl" x="505" y="100">host NAT</text>
     <text class="lbl" x="400" y="152">br-wan · 192.168.100.0/24</text>
     <text class="lbl" x="222" y="340">br-lan · 10.50.0.0/24</text>
     <text class="lbl" x="376" y="372">br-mgmt</text>
@@ -153,18 +153,18 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     <text class="ns" x="500" y="260" style="fill:var(--enc)">WireGuard</text>
 
     <!-- nodes -->
-    <g class="node" id="n-net"><rect x="420" y="14" width="150" height="44" rx="6"/><text class="nt" x="495" y="42">Интернет</text></g>
-    <g class="node" id="n-out"><rect x="690" y="14" width="150" height="44" rx="6"/><text class="nt" x="765" y="42">Чужой снаружи</text></g>
+    <g class="node" id="n-net"><rect x="420" y="14" width="150" height="44" rx="6"/><text class="nt" x="495" y="42">Internet</text></g>
+    <g class="node" id="n-out"><rect x="690" y="14" width="150" height="44" rx="6"/><text class="nt" x="765" y="42">Outsider</text></g>
     <g class="node" id="n-chr"><rect x="290" y="200" width="150" height="110" rx="8"/>
       <text class="nt" x="365" y="240">MikroTik CHR</text><text class="ns" x="365" y="262">firewall · NAT</text><text class="ns" x="365" y="280">DHCP · DNS</text></g>
     <g class="node" id="n-rgw"><rect x="560" y="200" width="130" height="110" rx="8"/>
-      <text class="nt" x="625" y="240">Шлюз rgw</text><text class="ns" x="625" y="262">удалённая</text><text class="ns" x="625" y="280">сторона</text></g>
-    <g class="node" id="n-srv"><rect x="760" y="160" width="130" height="70" rx="6"/><text class="nt" x="825" y="190">Сервер</text><text class="ns" x="825" y="210">10.60.0.10</text></g>
-    <g class="node" id="n-dec"><rect x="760" y="280" width="130" height="70" rx="6"/><text class="nt" x="825" y="310">Сосед</text><text class="ns" x="825" y="330">10.60.0.20</text></g>
+      <text class="nt" x="625" y="240">Gateway rgw</text><text class="ns" x="625" y="262">remote</text><text class="ns" x="625" y="280">side</text></g>
+    <g class="node" id="n-srv"><rect x="760" y="160" width="130" height="70" rx="6"/><text class="nt" x="825" y="190">Server</text><text class="ns" x="825" y="210">10.60.0.10</text></g>
+    <g class="node" id="n-dec"><rect x="760" y="280" width="130" height="70" rx="6"/><text class="nt" x="825" y="310">Neighbour</text><text class="ns" x="825" y="330">10.60.0.20</text></g>
     <g class="node" id="n-c1"><rect x="30" y="170" width="120" height="56" rx="6"/><text class="nt" x="90" y="195">client1</text><text class="ns" x="90" y="213">10.50.0.10</text></g>
     <g class="node" id="n-c2"><rect x="30" y="262" width="120" height="56" rx="6"/><text class="nt" x="90" y="287">client2</text><text class="ns" x="90" y="305">10.50.0.11</text></g>
-    <g class="node" id="n-rog"><rect x="30" y="372" width="120" height="56" rx="6"/><text class="nt" x="90" y="397">Чужая ВМ</text><text class="ns" x="90" y="415">неизвестный MAC</text></g>
-    <g class="node" id="n-host"><rect x="290" y="420" width="150" height="60" rx="6"/><text class="nt" x="365" y="448">Ваш компьютер</text><text class="ns" x="365" y="466">админ 172.31.0.1</text></g>
+    <g class="node" id="n-rog"><rect x="30" y="372" width="120" height="56" rx="6"/><text class="nt" x="90" y="397">Rogue VM</text><text class="ns" x="90" y="415">unknown MAC</text></g>
+    <g class="node" id="n-host"><rect x="290" y="420" width="150" height="60" rx="6"/><text class="nt" x="365" y="448">Your computer</text><text class="ns" x="365" y="466">admin 172.31.0.1</text></g>
 
     <g id="fx"></g>
   </svg>
@@ -175,62 +175,62 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     <div class="cap-text" id="cap-text"></div>
   </div>
   <div class="controls">
-    <button class="btn" id="b-prev" type="button">Назад</button>
-    <button class="btn primary" id="b-next" type="button">Дальше</button>
-    <button class="btn" id="b-replay" type="button">Ещё раз</button>
-    <button class="btn" id="b-auto" type="button">Показать всё сама</button>
+    <button class="btn" id="b-prev" type="button">Back</button>
+    <button class="btn primary" id="b-next" type="button">Next</button>
+    <button class="btn" id="b-replay" type="button">Replay</button>
+    <button class="btn" id="b-auto" type="button">Play all automatically</button>
     <div class="dots" id="dots"></div>
     <span class="stepno" id="stepno"></span>
   </div>
 </section>
 
 <section aria-labelledby="parts-h">
-  <h2 id="parts-h">Из чего всё состоит</h2>
-  <p class="sec-note">В лаборатории всё это виртуальные машины на одном компьютере. Позже «удалённая сторона» станет вашим настоящим сервером.</p>
+  <h2 id="parts-h">What it is made of</h2>
+  <p class="sec-note">In the lab everything is a virtual machine on one computer. Later the "remote side" becomes your real server.</p>
   <div class="cards">
-    <div class="card"><h3>Ваш компьютер</h3><span class="real">Arch · QEMU/KVM</span><p>Запускает все ВМ, соединяет их виртуальными кабелями (мосты) и даёт CHR выход в интернет. К сети клиентов намеренно не подключён.</p></div>
-    <div class="card"><h3>MikroTik CHR</h3><span class="real">маршрутизатор в ВМ</span><p>Единственная дверь между клиентами, интернетом и VPN. Здесь все правила: что пускать, что блокировать, что писать в журнал.</p></div>
-    <div class="card"><h3>Удалённая сторона</h3><span class="real">ВМ rgw + rsrv</span><p>Шлюз с WireGuard и сервер с SSH и HTTPS. Имитируют ваш будущий настоящий сервер и повторяют те же ограничения.</p></div>
-    <div class="card"><h3>Клиенты</h3><span class="real">client1, client2</span><p>Обычные пользователи изолированной сети. С них запускаются проверки: доступ к серверу, запреты, отказ при падении VPN.</p></div>
+    <div class="card"><h3>Your computer</h3><span class="real">Arch · QEMU/KVM</span><p>Runs all VMs, joins them with virtual cables (bridges) and gives the CHR Internet access. Deliberately not connected to the client network.</p></div>
+    <div class="card"><h3>MikroTik CHR</h3><span class="real">router in a VM</span><p>The only door between clients, the Internet and the VPN. All rules live here: what to allow, what to block, what to log.</p></div>
+    <div class="card"><h3>Remote side</h3><span class="real">VMs rgw + rsrv</span><p>A gateway with WireGuard and a server with SSH and HTTPS. They imitate your future real server and enforce the same restrictions.</p></div>
+    <div class="card"><h3>Clients</h3><span class="real">client1, client2</span><p>Ordinary users of the isolated network. The tests run from them: server access, denials, failure when the VPN is down.</p></div>
   </div>
 </section>
 
 <section aria-labelledby="layers-h">
-  <h2 id="layers-h">Пять слоёв защиты</h2>
-  <p class="sec-note">Если один слой дал сбой, следующий всё равно держит.</p>
+  <h2 id="layers-h">Five layers of protection</h2>
+  <p class="sec-note">If one layer fails, the next one still holds.</p>
   <div class="layers">
-    <div class="layer"><b>1. Мост хоста</b><span>Кадры от неизвестных устройств в сеть клиентов не пропускаются. Каждый порт привязан к своему MAC. Клиенты друг с другом напрямую не говорят.</span></div>
-    <div class="layer"><b>2. Хост</b><span>У хоста нет адреса в сети клиентов. Пересылает он только трафик в интернет, поэтому через него CHR не обойти.</span></div>
-    <div class="layer"><b>3. CHR</b><span>По умолчанию всё запрещено. Разрешены только перечисленные клиенты, один сервер и два порта. Подделка адресов режется на входе, отказы пишутся в журнал.</span></div>
-    <div class="layer"><b>4. WireGuard</b><span>Шифрование и ключи. Пиру разрешены только два адреса: шлюз и сервер. Всё остальное через тоннель не пройдёт.</span></div>
-    <div class="layer"><b>5. Шлюз rgw</b><span>Повторная проверка на другом конце тоннеля: тот же один сервер и те же порты.</span></div>
+    <div class="layer"><b>1. Host bridge</b><span>Frames from unknown devices never reach the client network. Each port is pinned to its MAC. Clients cannot talk to each other directly.</span></div>
+    <div class="layer"><b>2. Host</b><span>The host has no address in the client network. It forwards only Internet traffic, so the CHR cannot be bypassed through it.</span></div>
+    <div class="layer"><b>3. CHR</b><span>Everything is denied by default. Only the listed clients, one server and two ports are allowed. Spoofed addresses are dropped at the entrance, refusals are logged.</span></div>
+    <div class="layer"><b>4. WireGuard</b><span>Encryption and keys. The peer is allowed only two addresses: the gateway and the server. Nothing else passes through the tunnel.</span></div>
+    <div class="layer"><b>5. Gateway rgw</b><span>A second check at the other end of the tunnel: the same single server and the same ports.</span></div>
   </div>
 </section>
 
 <section aria-labelledby="gl-h">
-  <h2 id="gl-h">Слова, которые встречаются</h2>
+  <h2 id="gl-h">Terms you will meet</h2>
   <dl class="gloss">
-    <div><dt>Мост (bridge)</dt><dd>Виртуальный коммутатор в Linux. К нему подключаются виртуальные кабели ВМ.</dd></div>
-    <div><dt>TAP</dt><dd>Виртуальный «разъём» для одной ВМ. Одним концом в мост, другим в сетевую карту ВМ.</dd></div>
-    <div><dt>NAT</dt><dd>Подмена адреса отправителя на адрес выхода. Так внутренние адреса выходят в интернет.</dd></div>
-    <div><dt>WireGuard</dt><dd>Современный VPN: зашифрованный тоннель между двумя узлами по ключам.</dd></div>
-    <div><dt>Fail closed</dt><dd>При поломке защиты система закрывается, а не открывается. Нет VPN значит нет доступа.</dd></div>
-    <div><dt>Netwatch</dt><dd>Функция CHR, которая каждые 5 секунд пингует шлюз и включает или выключает маршрут.</dd></div>
-    <div><dt>Blackhole</dt><dd>Маршрут, который просто выбрасывает пакеты. Он удерживает трафик от ухода мимо VPN.</dd></div>
-    <div><dt>Anti-spoofing</dt><dd>Защита от подделки адреса отправителя: «я 10.50.0.10» принимается только из настоящей LAN.</dd></div>
+    <div><dt>Bridge</dt><dd>A virtual switch in Linux. The virtual cables of the VMs plug into it.</dd></div>
+    <div><dt>TAP</dt><dd>A virtual "plug" for one VM: one end in the bridge, the other in the VM network card.</dd></div>
+    <div><dt>NAT</dt><dd>Replaces the sender address with the exit address. This is how internal addresses reach the Internet.</dd></div>
+    <div><dt>WireGuard</dt><dd>A modern VPN: an encrypted tunnel between two nodes, authenticated by keys.</dd></div>
+    <div><dt>Fail closed</dt><dd>When protection breaks, the system closes instead of opening. No VPN means no access.</dd></div>
+    <div><dt>Netwatch</dt><dd>A CHR feature that pings the gateway every 5 seconds and enables or disables the route.</dd></div>
+    <div><dt>Blackhole</dt><dd>A route that simply discards packets. It keeps traffic from leaving around the VPN.</dd></div>
+    <div><dt>Anti-spoofing</dt><dd>Protection against forged sender addresses: "I am 10.50.0.10" is accepted only from the real LAN.</dd></div>
   </dl>
 </section>
 
 <section aria-labelledby="cmd-h">
-  <h2 id="cmd-h">Что делаете вы руками</h2>
+  <h2 id="cmd-h">What you do by hand</h2>
   <div class="cmds"><table>
-    <tr><td>./lab.sh up</td><td>Строит всю сеть и поднимает ВМ с VPN. Первый запуск скачивает образы.</td></tr>
-    <tr><td>./lab.sh status</td><td>Какие ВМ работают, жив ли тоннель, включён ли маршрут к серверу.</td></tr>
-    <tr><td>./lab.sh test</td><td>10 проверок из задания и отчёт в <span class="mono">reports/test-results.md</span>.</td></tr>
-    <tr><td>./lab.sh shell client1 '...'</td><td>Команда внутри клиента. Хост в LAN не ходит, поэтому так.</td></tr>
-    <tr><td>ssh admin@172.31.0.2</td><td>Управление CHR. Принимается только с хоста.</td></tr>
-    <tr><td>./lab.sh backup</td><td>Выгрузка конфигурации CHR без секретов в <span class="mono">docs/</span>.</td></tr>
-    <tr><td>./lab.sh down</td><td>Убирает ВМ, мосты и правила с вашего компьютера.</td></tr>
+    <tr><td>./lab.sh up</td><td>Builds the whole network and starts the VMs with the VPN. The first run downloads images.</td></tr>
+    <tr><td>./lab.sh status</td><td>Which VMs are running, whether the tunnel is alive, whether the route to the server is enabled.</td></tr>
+    <tr><td>./lab.sh test</td><td>The 10 required checks and a report in <span class="mono">reports/test-results.md</span>.</td></tr>
+    <tr><td>./lab.sh shell client1 '...'</td><td>A command inside a client. The host has no access to the LAN, hence this way.</td></tr>
+    <tr><td>ssh admin@172.31.0.2</td><td>CHR administration. Accepted from the host only.</td></tr>
+    <tr><td>./lab.sh backup</td><td>Exports the CHR configuration without secrets to <span class="mono">docs/</span>.</td></tr>
+    <tr><td>./lab.sh down</td><td>Removes the VMs, bridges and rules from your computer.</td></tr>
   </table></div>
 </section>
 
@@ -258,37 +258,37 @@ code,.mono{font-family:var(--mono);font-size:.9em}
   };
 
   var S=[
-    {tab:'Клиент ходит на сервер',steps:[
-      {k:'ok',t:'Клиент отправляет запрос',x:'client1 открывает https://10.60.0.10. Пакет идёт по виртуальному кабелю br-lan к маршрутизатору CHR.',p:P.c1chr,l:'→ 10.60.0.10:443',hl:['c1']},
-      {k:'info',t:'CHR проверяет пакет',x:'Охранник сверяется со списком:<ol><li>Адрес отправителя действительно из 10.50.0.0/24 (защита от подделки).</li><li>Отправитель есть в списке разрешённых: .10 или .11.</li><li>Цель ровно 10.60.0.10, порт 22 или 443.</li><li>Тоннель жив, маршрут через него включён.</li></ol>Всё сошлось, пакет разрешён.',p:P.chr,hl:['chr']},
-      {k:'enc',t:'Пакет едет в зашифрованном тоннеле',x:'WireGuard упаковывает пакет и шифрует. Из CHR он выходит через WAN как обычный UDP на порт 51820. Кто бы ни смотрел на br-wan, содержимого он не увидит.',p:P.chrrgw,l:'зашифровано',hl:['tun']},
-      {k:'ok',t:'Шлюз расшифровывает и проверяет второй раз',x:'rgw достаёт исходный пакет и сам применяет правило: только сервер 10.60.0.10, только порты 22 и 443, только из сети клиентов. Затем отдаёт серверу.',p:P.rgwsrv,l:'→ :443',hl:['rgw','srv']},
-      {k:'ok',t:'Ответ возвращается',x:'Сервер отвечает. Ответ идёт обратно тем же путём и пропускается как продолжение уже начатого соединения. Новые соединения «снаружи внутрь» запрещены.',p:P.back,l:'ответ',hl:['c1']}
+    {tab:'Client reaches the server',steps:[
+      {k:'ok',t:'Client sends a request',x:'client1 opens https://10.60.0.10. The packet goes over the virtual cable br-lan to the CHR router.',p:P.c1chr,l:'→ 10.60.0.10:443',hl:['c1']},
+      {k:'info',t:'CHR checks the packet',x:'The guard checks the list:<ol><li>The sender address really is from 10.50.0.0/24 (anti-spoofing).</li><li>The sender is on the allowed list: .10 or .11.</li><li>The target is exactly 10.60.0.10, port 22 or 443.</li><li>The tunnel is alive and the route through it is enabled.</li></ol>Everything matches, the packet is allowed.',p:P.chr,hl:['chr']},
+      {k:'enc',t:'The packet travels in the encrypted tunnel',x:'WireGuard wraps and encrypts the packet. It leaves the CHR through WAN as ordinary UDP to port 51820. Whoever watches br-wan cannot see the content.',p:P.chrrgw,l:'encrypted',hl:['tun']},
+      {k:'ok',t:'Gateway decrypts and checks a second time',x:'rgw extracts the original packet and applies its own rule: only server 10.60.0.10, only ports 22 and 443, only from the client network. Then it hands the packet to the server.',p:P.rgwsrv,l:'→ :443',hl:['rgw','srv']},
+      {k:'ok',t:'The reply comes back',x:'The server answers. The reply goes back the same way and is allowed as part of an already established connection. New connections "from outside to inside" are denied.',p:P.back,l:'reply',hl:['c1']}
     ]},
-    {tab:'Клиент лезет куда нельзя',steps:[
-      {k:'deny',t:'Другой компьютер удалённой сети',x:'client1 пробует зайти на соседа 10.60.0.20. Разрешён один адрес, остальная удалённая сеть закрыта. CHR выбрасывает пакет и пишет в журнал DENY-REMOTE.',p:P.c1stop,l:'→ 10.60.0.20:22',end:'x',lx:-62,hl:['chr','dec']},
-      {k:'deny',t:'Тот же сервер, но другой порт',x:'Пробуем RDP, порт 3389. Сервер его слушает, но правило разрешает только 22 и 443. Запись в журнале: DENY-RDP.',p:P.c1stop,l:'→ 10.60.0.10:3389',end:'x',lx:-62,hl:['chr']},
-      {k:'deny',t:'DNS мимо CHR',x:'Запрос к 8.8.8.8 напрямую запрещён, иначе DNS утекал бы в обход политики. Имена клиент спрашивает только у CHR. Запись: DNS-LEAK.',p:P.c1stop,l:'DNS → 8.8.8.8',end:'x',lx:-62,hl:['chr']},
-      {k:'ok',t:'Обычный интернет работает',x:'Веб (80 и 443), NTP и ping разрешены. Пакет уходит через NAT хоста. Запрещено только то, что не нужно по политике.',p:P.c1net,l:'сайт :443',hl:['net']}
+    {tab:'Client tries forbidden things',steps:[
+      {k:'deny',t:'Another host of the remote network',x:'client1 tries to reach the neighbour 10.60.0.20. Only one address is allowed, the rest of the remote network is closed. The CHR drops the packet and logs DENY-REMOTE.',p:P.c1stop,l:'→ 10.60.0.20:22',end:'x',lx:-62,hl:['chr','dec']},
+      {k:'deny',t:'Same server, different port',x:'We try RDP, port 3389. The server listens on it, but the rule allows only 22 and 443. Log entry: DENY-RDP.',p:P.c1stop,l:'→ 10.60.0.10:3389',end:'x',lx:-62,hl:['chr']},
+      {k:'deny',t:'DNS bypassing the CHR',x:'A direct query to 8.8.8.8 is denied, otherwise DNS would leak around the policy. The client asks names only from the CHR. Log entry: DNS-LEAK.',p:P.c1stop,l:'DNS → 8.8.8.8',end:'x',lx:-62,hl:['chr']},
+      {k:'ok',t:'Normal Internet works',x:'Web (80 and 443), NTP and ping are allowed. The packet leaves through the host NAT. Only what the policy does not need is denied.',p:P.c1net,l:'website :443',hl:['net']}
     ]},
-    {tab:'VPN упал: доступ закрыт',steps:[
-      {k:'warn',t:'Тоннель оборвался',x:'На удалённой стороне остановили WireGuard или пропал канал. Для проверки №8 мы делаем это командой на rgw.',p:P.chr,down:['rgw','tun']},
-      {k:'warn',t:'CHR замечает',x:'Netwatch каждые 5 секунд пингует адрес шлюза внутри тоннеля (10.200.0.1). Ответа нет.',p:P.ping,l:'ping 10.200.0.1',end:'x',down:['rgw','tun'],hl:['chr']},
-      {k:'info',t:'Маршрут к серверу отключается',x:'CHR выключает маршрут 10.60.0.10 через тоннель. Остаётся «чёрная дыра» на всю сеть 10.60.0.0/24: пакеты туда выбрасываются. Маршрута к серверу через интернет нет и появиться не может. Это и есть fail closed.',p:P.chr,down:['rgw','tun'],hl:['chr']},
-      {k:'deny',t:'Клиент пробует достучаться',x:'Пакет доходит до CHR и умирает в blackhole. В WAN он не уходит: tcpdump на br-wan покажет 0 пакетов к 10.60.x.x. Сервер защищён даже при поломке VPN.',p:P.c1stop,l:'→ 10.60.0.10:22',end:'x',lx:-62,down:['rgw','tun'],hl:['chr']},
-      {k:'ok',t:'Интернет при этом работает',x:'Отрезана только удалённая сеть. Обычный выход в интернет у клиента не пострадал.',p:P.c1net,l:'сайт :443',down:['rgw','tun']},
-      {k:'enc',t:'VPN вернулся: всё восстановилось само',x:'Шлюз снова отвечает на ping, netwatch включает маршрут обратно. Доступ возвращается без чьего-либо участия, обычно за 5–15 секунд.',p:P.chrrgw,l:'ping 10.200.0.1 ✓',hl:['tun','rgw']}
+    {tab:'VPN down: access closed',steps:[
+      {k:'warn',t:'The tunnel dropped',x:'WireGuard was stopped on the remote side or the link disappeared. For test 8 we do this with a command on rgw.',p:P.chr,down:['rgw','tun']},
+      {k:'warn',t:'The CHR notices',x:'Netwatch pings the gateway address inside the tunnel (10.200.0.1) every 5 seconds. No answer.',p:P.ping,l:'ping 10.200.0.1',end:'x',down:['rgw','tun'],hl:['chr']},
+      {k:'info',t:'The route to the server is disabled',x:'The CHR disables the route to 10.60.0.10 through the tunnel. A "black hole" for the whole 10.60.0.0/24 remains: packets to it are discarded. There is no route to the server over the Internet and none can appear. This is fail closed.',p:P.chr,down:['rgw','tun'],hl:['chr']},
+      {k:'deny',t:'The client tries to connect',x:'The packet reaches the CHR and dies in the blackhole. It never goes out to WAN: tcpdump on br-wan shows 0 packets to 10.60.x.x. The server is protected even when the VPN is broken.',p:P.c1stop,l:'→ 10.60.0.10:22',end:'x',lx:-62,down:['rgw','tun'],hl:['chr']},
+      {k:'ok',t:'Internet still works',x:'Only the remote network is cut off. The client&#39;s normal Internet access is not affected.',p:P.c1net,l:'website :443',down:['rgw','tun']},
+      {k:'enc',t:'VPN is back: everything recovers by itself',x:'The gateway answers ping again, netwatch enables the route back. Access returns with nobody&#39;s help, usually within 5–15 seconds.',p:P.chrrgw,l:'ping 10.200.0.1 ✓',hl:['tun','rgw']}
     ]},
-    {tab:'Чужаки и подмены',steps:[
-      {k:'deny',t:'Кто-то снаружи стучится в CHR',x:'На WAN открыт только WireGuard, и только для адреса шлюза. SSH, WinBox и всё остальное дропается и пишется в журнал INPUT-DROP. Пройти из WAN в LAN тоже нельзя.',p:P.outchr,l:'SSH → CHR',end:'x',hl:['chr','out']},
-      {k:'deny',t:'Чужая ВМ подключилась к сети клиентов',x:'Мост хоста пропускает в br-lan только три известных порта (CHR и два клиента). Кадры незнакомого порта выбрасываются ещё до CHR. IP-адрес «из правильной подсети» не помогает.',p:P.rogue,l:'ARP / ping',end:'x',hl:['rog']},
-      {k:'deny',t:'Ваш компьютер пробует зайти в LAN',x:'У хоста нет адреса в br-lan и нет маршрута туда. Он обычный сосед по железу, но не участник сети. Проверка №6 это подтверждает.',p:P.hostlan,l:'ping 10.50.0.10',end:'x',hl:['host']},
-      {k:'ok',t:'А управление разрешено',x:'SSH и WinBox на CHR принимаются только с адреса хоста 172.31.0.1 и только по отдельному кабелю br-mgmt. Это единственный путь администратора.',p:P.hostchr,l:'ssh admin',hl:['host','chr']}
+    {tab:'Intruders and spoofing',steps:[
+      {k:'deny',t:'Someone outside knocks on the CHR',x:'On WAN only WireGuard is open, and only for the gateway address. SSH, WinBox and everything else is dropped and logged as INPUT-DROP. Passing from WAN to LAN is not possible either.',p:P.outchr,l:'SSH → CHR',end:'x',hl:['chr','out']},
+      {k:'deny',t:'A rogue VM joined the client network',x:'The host bridge lets only three known ports into br-lan (CHR and two clients). Frames from an unknown port are dropped before they reach the CHR. An IP address "from the right subnet" does not help.',p:P.rogue,l:'ARP / ping',end:'x',hl:['rog']},
+      {k:'deny',t:'Your computer tries to enter the LAN',x:'The host has no address in br-lan and no route there. It is a neighbour on the hardware, not a participant of the network. Test 6 confirms this.',p:P.hostlan,l:'ping 10.50.0.10',end:'x',hl:['host']},
+      {k:'ok',t:'But management is allowed',x:'SSH and WinBox on the CHR are accepted only from the host address 172.31.0.1 and only over the separate cable br-mgmt. This is the administrator&#39;s only path.',p:P.hostchr,l:'ssh admin',hl:['host','chr']}
     ]}
   ];
 
   var COLOR={ok:'var(--ok)',deny:'var(--deny)',warn:'var(--warn)',enc:'var(--enc)',info:'var(--accent)'};
-  var BADGE={ok:'Разрешено',deny:'Запрещено',warn:'Сбой',enc:'Шифрование',info:'Проверка'};
+  var BADGE={ok:'Allowed',deny:'Denied',warn:'Failure',enc:'Encryption',info:'Check'};
   var NODES=['net','out','chr','rgw','srv','dec','c1','c2','rog','host'];
 
   var sc=0, st=0, run=0, autoTimer=null, auto=false;
@@ -363,7 +363,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
     clearFx(); applyNodes(s);
     var b=$('cap-badge'); b.className='badge '+s.k; b.textContent=BADGE[s.k];
     $('cap-title').textContent=s.t; $('cap-text').innerHTML=s.x;
-    $('stepno').textContent='Шаг '+(st+1)+' из '+S[sc].steps.length;
+    $('stepno').textContent='Step '+(st+1)+' of '+S[sc].steps.length;
     var dots=$('dots'); dots.innerHTML='';
     S[sc].steps.forEach(function(_,i){var d=document.createElement('span');d.className='dot'+(i===st?' on':'');dots.appendChild(d)});
     $('b-prev').disabled=st===0; $('b-next').disabled=st===S[sc].steps.length-1;
@@ -378,7 +378,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
 
   function setAuto(v){
     auto=v; clearTimeout(autoTimer);
-    $('b-auto').textContent=v?'Остановить':'Показать всё сама';
+    $('b-auto').textContent=v?'Stop':'Play all automatically';
   }
 
   function syncTabs(){
@@ -386,7 +386,7 @@ code,.mono{font-family:var(--mono);font-size:.9em}
   }
   function setTheme(t){
     document.documentElement.setAttribute('data-theme',t);
-    $('b-theme').textContent=t==='dark'?'Светлая тема':'Тёмная тема';
+    $('b-theme').textContent=t==='dark'?'Light theme':'Dark theme';
     try{localStorage.setItem('chr-theme',t)}catch(e){}
   }
 
