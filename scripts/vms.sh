@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VM definitions and lifecycle. Usage: vms.sh {create|start|stop|status} [chr|rgw|rsrv|client1|client2|all]
+# VM lifecycle. Usage: vms.sh {create|start|stop|status} [chr|rgw|rsrv|client1|client2|all]
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

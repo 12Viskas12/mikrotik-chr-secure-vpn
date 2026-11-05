@@ -1,6 +1,5 @@
 #cloud-config
-# Simulated protected internal server 10.60.0.10 (SSH + HTTPS) plus a "decoy" neighbour 10.60.0.20
-# and a TCP/3389 listener, so the deny rules can be proven against real open ports.
+# simulated server 10.60.0.10 (SSH, HTTPS) plus decoy 10.60.0.20 and a 3389 listener for the deny tests
 hostname: rsrv
 manage_etc_hosts: true
 users:

@@ -1,5 +1,5 @@
 #cloud-config
-# Authorized LAN client 2 (gets its fixed address from the CHR DHCP static lease).
+# LAN client 2
 hostname: client2
 manage_etc_hosts: true
 users:

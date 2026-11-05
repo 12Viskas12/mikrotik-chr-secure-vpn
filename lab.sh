@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MikroTik CHR + WireGuard isolated-network lab. Run as a normal user (sudo is used where needed).
+# MikroTik CHR + WireGuard lab. Run as a normal user.
 set -euo pipefail
 cd "$(dirname "$0")"
 # shellcheck source=scripts/lib.sh

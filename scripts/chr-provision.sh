@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Push the rendered RouterOS configuration to a factory-fresh CHR (empty admin password) and import it.
+# Import the rendered config into a fresh CHR.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

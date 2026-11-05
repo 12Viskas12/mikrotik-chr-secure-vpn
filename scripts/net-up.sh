@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create the four isolated bridges, TAP ports, host firewall (nftables) and dnsmasq. Needs root.
+# Create bridges, TAP ports, host firewall and dnsmasq.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -10,7 +10,6 @@ need ip nft dnsmasq sysctl
 mkbr() {
   local br=$1
   ip link show "$br" >/dev/null 2>&1 || ip link add "$br" type bridge stp_state 0
-  # no IPv6 on the bridge device itself -> no link-local, no RA/ND exposure of the host
   sysctl -qw "net.ipv6.conf.$br.disable_ipv6=1"
   ip link set "$br" up
   command -v nmcli >/dev/null 2>&1 && nmcli device set "$br" managed no >/dev/null 2>&1 || true
@@ -27,7 +26,7 @@ mktap() {  # mktap TAP BRIDGE [isolated]
 
 log "creating bridges"
 for b in "$MGMT_BR" "$WAN_BR" "$LAN_BR" "$REMOTE_BR"; do mkbr "$b"; done
-# Only mgmt and wan get a host address. br-lan and br-remote have NO IP: the host cannot reach them at L3.
+# only mgmt and wan get a host IP
 ip addr replace "$HOST_MGMT_IP/24" dev "$MGMT_BR"
 ip addr replace "$HOST_WAN_IP/24" dev "$WAN_BR"
 

@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Generate the server-side (remote gateway) WireGuard + nftables config for a REAL server,
-# using the keys from ./lab.sh keys. Prints files into var/remote-gateway/ - copy them to the server.
-#
+# Generate WireGuard + nftables config for a real server into var/remote-gateway/.
 # usage: remote-gateway-config.sh PUBLIC_IF LAN_IF SERVER_IP
-#   PUBLIC_IF  interface facing the Internet (WireGuard listens here)
-#   LAN_IF     interface of the protected network (10.60.0.0/24)
-#   SERVER_IP  the one protected server (default 10.60.0.10)
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -27,7 +22,6 @@ CONF
 
 cat > "$out/nftables-rgw.conf" <<CONF
 #!/usr/sbin/nft -f
-# Merge with your existing rules; these only cover the VPN path.
 table inet rgw {
   chain input {
     type filter hook input priority 0; policy drop;

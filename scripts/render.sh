@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render all templates (chr/, host/, cloud-init/) into var/render using the values from lib.sh and the keys.
+# Render all templates into var/render.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

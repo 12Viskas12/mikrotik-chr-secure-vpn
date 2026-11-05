@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Export the live CHR configuration (RouterOS hides secrets in /export by default) and sanitise it.
+# Export the CHR config and sanitise it.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

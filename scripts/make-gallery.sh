@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Build docs/screenshots.md from the images present in evidence/screenshots (file name = caption).
-# Name files like 03-wireguard-handshake.png -> caption "wireguard handshake".
+# Build docs/screenshots.md from evidence/screenshots (file name = caption).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out=docs/screenshots.md

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Run before every push. Scans every file that would be published (works with or without git).
-# Fails if a secret-looking string or a forbidden file is found.
+# Run before every push: fails on secret-looking strings or forbidden files.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 

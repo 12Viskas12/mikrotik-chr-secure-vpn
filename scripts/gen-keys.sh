@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate WireGuard key pairs and a pre-shared key into var/keys (git-ignored, mode 600).
+# Generate WireGuard keys into var/keys (git-ignored).
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
