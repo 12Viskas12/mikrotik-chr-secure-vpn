@@ -12,3 +12,5 @@
 | 2026-11-03 | Screenshots | `peers print stats` is not supported on 7.12; used `print proplist=...` instead. Added `./lab.sh chr '...'` to avoid password prompts. Captured VPN down (fail closed) and reconnect manually |
 | 2026-11-03 | `pre-push-check.sh` | The first version printed OK without scanning anything because the folder was not yet a git repository. Rewrote it to scan plain folders too and tested it with planted secrets |
 | 2026-11-03 | `./lab.sh backup` | Live CHR export, firewall table and routing table saved to `docs/`; checked that no secrets remain |
+
+Step-by-step version with screenshots: [my-run.md](my-run.md).

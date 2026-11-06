@@ -1,6 +1,6 @@
 # Screenshots
 
-Captured from a real run of the lab (RouterOS 7.12.1, QEMU/KVM on Arch Linux). Passwords and keys are not shown.
+Captured from a real run of the lab (RouterOS 7.12.1, QEMU/KVM on Arch Linux). Passwords and keys are not shown. The steps behind each screenshot are in [my-run.md](my-run.md).
 
 ## Lab is running
 

@@ -16,3 +16,13 @@ Design-time findings: risks that a naive build of this task has, and what this p
 | 10 | Secrets in git | key/password disclosure | keys generated locally in `var/`, templates with placeholders, `.gitignore`, pre-push check, gitleaks CI, sanitiser |
 | 11 | Pre-shared key and private keys on lab disks | lab-only exposure | acceptable for a lab; use a secrets manager in production |
 | 12 | Free CHR licence, no config encryption at rest | n/a for lab | mention only |
+
+## Evidence
+
+| Finding | Screenshot |
+|---|---|
+| 1, 2: L2 isolation, no host IP on `br-lan` | ![Host bridges](../evidence/screenshots/02-host-bridges.png) ![L2 allow-list](../evidence/screenshots/02b-l2-allowlist-nft.png) |
+| 5: fail closed when the VPN is down | ![VPN down](../evidence/screenshots/09-vpn-down-fail-closed.png) |
+| 6: only one server and two ports | ![Other hosts denied](../evidence/screenshots/08-denied-other-hosts.png) |
+| 8: DNS leak blocked, denials logged | ![Firewall log](../evidence/screenshots/13-firewall-log.png) |
+| WireGuard-only traffic on the wire | ![tcpdump](../evidence/screenshots/11-tcpdump-wireguard-only.png) |

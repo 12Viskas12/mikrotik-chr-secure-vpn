@@ -18,6 +18,20 @@
 
 Test results of your own run are in [reports/test-results.md](../reports/test-results.md).
 
+## Results of my run
+
+![Test summary: 51 passed, 0 failed](../evidence/screenshots/12-test-results.png)
+
+| Check | Screenshot |
+|---|---|
+| 2: LAN to server (ports 22 and 443 open, 3389 filtered) | ![Client to server](../evidence/screenshots/07-client-to-server-ok.png) |
+| 3: other remote hosts denied | ![Other hosts denied](../evidence/screenshots/08-denied-other-hosts.png) |
+| 8: VPN down, no bypass | ![VPN down](../evidence/screenshots/09-vpn-down-fail-closed.png) |
+| 9: automatic recovery | ![VPN back](../evidence/screenshots/10-vpn-reconnect.png) |
+| E: WireGuard only on the wire | ![tcpdump](../evidence/screenshots/11-tcpdump-wireguard-only.png) |
+
+The same run step by step: [my-run.md](my-run.md).
+
 ## Commands worth screenshotting
 
 Put PNG files into `evidence/screenshots/` named `NN-description.png`, then run `scripts/make-gallery.sh`.

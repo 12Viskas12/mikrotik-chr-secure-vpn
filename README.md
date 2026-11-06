@@ -12,6 +12,18 @@ The animation below plays all four scenarios automatically: a client reaching th
 
 Want to click through step by step? Open the [interactive version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/) (GitHub Pages) or `docs/index.html` locally.
 
+## Results of my own run
+
+I ran the whole lab on my computer (Arch Linux, QEMU/KVM, CHR 7.12.1): **51 of 51 checks passed**. The full walkthrough with every command and screenshot is in [docs/my-run.md](docs/my-run.md).
+
+| Lab is running | WireGuard peer |
+|---|---|
+| ![Lab is running](evidence/screenshots/01-qemu-vms-running.png) | ![WireGuard peer](evidence/screenshots/04-wireguard-handshake.png) |
+| **VPN down: fail closed** | **Test summary** |
+| ![VPN down](evidence/screenshots/09-vpn-down-fail-closed.png) | ![Test summary](evidence/screenshots/12-test-results.png) |
+
+All screenshots with captions: [docs/screenshots.md](docs/screenshots.md).
+
 ## Architecture
 
 ```
@@ -42,7 +54,7 @@ Details: [docs/architecture.md](docs/architecture.md) · [docs/qemu-config.md](d
 ## Quick start (Arch Linux; Debian/Ubuntu also supported)
 
 ```bash
-git clone <this repo> && cd mikrotik-chr-vpn-lab
+git clone https://github.com/12Viskas12/mikrotik-chr-secure-vpn && cd mikrotik-chr-secure-vpn
 cp lab.env.example lab.env && $EDITOR lab.env   # set ADMIN_PASSWORD (letters+digits)
 ./lab.sh deps        # installs qemu, nftables, dnsmasq, wireguard-tools, ...
 sudo usermod -aG kvm "$USER"                      # once, then log out/in
@@ -51,6 +63,8 @@ sudo usermod -aG kvm "$USER"                      # once, then log out/in
 ./lab.sh backup      # sanitised CHR export -> docs/chr-export.rsc
 ./lab.sh down        # remove everything from the host
 ```
+
+The same steps with screenshots: [docs/my-run.md](docs/my-run.md).
 
 WinBox/SSH to the CHR from the host: `ssh admin@172.31.0.2` (only the host address `172.31.0.1` is accepted).
 
@@ -76,13 +90,13 @@ WinBox/SSH to the CHR from the host: `ssh admin@172.31.0.2` (only the host addre
 | `chr/chr-lab.rsc.tpl` | full RouterOS configuration template |
 | `cloud-init/` | remote gateway, server, clients |
 | `scripts/` | automation, tests, sanitiser, real-server helper |
-| `docs/` | architecture, firewall table, testing, security findings, deployment |
+| `docs/` | my-run walkthrough, architecture, firewall table, testing, security findings, deployment |
 | `reports/` | final report and generated `test-results.md` |
 | `evidence/` | `screenshots/`, `sanitized-logs/` |
 
 ## Evidence
 
-Screenshots and logs: [docs/screenshots.md](docs/screenshots.md), [docs/testing.md](docs/testing.md), [reports/final-report.md](reports/final-report.md).
+Walkthrough of my run: [docs/my-run.md](docs/my-run.md) · screenshots: [docs/screenshots.md](docs/screenshots.md) · tests: [docs/testing.md](docs/testing.md), [reports/test-results.md](reports/test-results.md) · report: [reports/final-report.md](reports/final-report.md).
 
 ## Repository security
 
