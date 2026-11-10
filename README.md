@@ -1,28 +1,28 @@
 # MikroTik CHR in QEMU: isolated LAN + WireGuard to a remote server
 
-A fully scripted lab: a **MikroTik CHR** runs in QEMU/KVM, protects an **isolated LAN** (`10.50.0.0/24`) and reaches **one server** (`10.60.0.10`, SSH/HTTPS) in a remote network (`10.60.0.0/24`) **only through a WireGuard tunnel**. Default-deny firewall, fail-closed VPN, L2 isolation at the Linux bridge level.
+A MikroTik CHR runs in QEMU/KVM and protects an isolated LAN (`10.50.0.0/24`). The LAN can reach one server (`10.60.0.10`, SSH and HTTPS) in a remote network (`10.60.0.0/24`), and only through a WireGuard tunnel. The firewall denies everything by default, and if the VPN drops the clients lose access to the remote network instead of falling back to the normal route.
 
-Until a real server is available the remote side is simulated by two more VMs (remote gateway + server). Moving to the real server needs one setting, see [docs/deploy-on-server.md](docs/deploy-on-server.md).
+Until I have a real server, the remote side is two more VMs (a gateway and the server). Switching to a real one is one setting, see [docs/deploy-on-server.md](docs/deploy-on-server.md).
 
-## Interactive scheme
+## How it works
 
-The animation below plays all four scenarios automatically: a client reaching the server through the tunnel, a client trying to reach what is forbidden, the VPN going down (fail closed), and intruders/spoofing.
+The animation plays four cases: a client using the server, a client trying things it shouldn't, the VPN going down, and intruders.
 
-![How the lab works: animated scheme](docs/img/scheme.gif)
+![Animated scheme](docs/img/scheme.gif)
 
-Want to click through step by step? Open the [interactive version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/) (GitHub Pages) or `docs/index.html` locally.
+There is also a [clickable version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/) (`docs/index.html`).
 
-## Results of my own run
+## My run
 
-I ran the whole lab on my computer (Arch Linux, QEMU/KVM, CHR 7.12.1): **51 of 51 checks passed**. The full walkthrough with every command and screenshot is in [docs/my-run.md](docs/my-run.md).
+I ran the whole thing on my PC (Arch, QEMU/KVM, CHR 7.12.1) and all 51 checks passed. The steps with every command are in [docs/my-run.md](docs/my-run.md).
 
 | Lab is running | WireGuard peer |
 |---|---|
 | ![Lab is running](evidence/screenshots/01-qemu-vms-running.png) | ![WireGuard peer](evidence/screenshots/04-wireguard-handshake.png) |
-| **VPN down: fail closed** | **Test summary** |
+| VPN down | Test summary |
 | ![VPN down](evidence/screenshots/09-vpn-down-fail-closed.png) | ![Test summary](evidence/screenshots/12-test-results.png) |
 
-All screenshots with captions: [docs/screenshots.md](docs/screenshots.md).
+All screenshots: [docs/screenshots.md](docs/screenshots.md).
 
 ## Architecture
 

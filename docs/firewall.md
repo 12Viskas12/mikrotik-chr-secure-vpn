@@ -28,16 +28,16 @@ The allow list is intentionally narrower than the task table (`lan-authorized` i
 
 Telnet/FTP/HTTP/HTTPS/API disabled; SSH and WinBox restricted to `172.31.0.1/32`; MAC-server, neighbor discovery, bandwidth server, proxy, SOCKS, UPnP, cloud DDNS off; strong SSH crypto; read-only `audit` user; firewall log to disk file `fwlog`; daily `/export`.
 
-## Seen in the real run
+## Screenshots from my run
 
-Forward chain with hit counters:
+Forward chain with counters:
 
 ![Forward chain with counters](../evidence/screenshots/06-firewall-rules.png)
 
-Logged denials (`DENY-RDP`, `DENY-REMOTE`, `DNS-LEAK`):
+Denials in the log:
 
 ![Firewall log](../evidence/screenshots/13-firewall-log.png)
 
-Bridge-level allow-list on the host:
+Bridge allow-list on the host:
 
 ![L2 allow-list](../evidence/screenshots/02b-l2-allowlist-nft.png)

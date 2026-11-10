@@ -17,7 +17,7 @@ Design-time findings: risks that a naive build of this task has, and what this p
 | 11 | Pre-shared key and private keys on lab disks | lab-only exposure | acceptable for a lab; use a secrets manager in production |
 | 12 | Free CHR licence, no config encryption at rest | n/a for lab | mention only |
 
-## Evidence
+## Screenshots
 
 | Finding | Screenshot |
 |---|---|

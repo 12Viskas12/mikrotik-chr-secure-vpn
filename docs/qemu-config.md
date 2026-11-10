@@ -35,7 +35,7 @@ ip link set tap-c1 type bridge_slave isolated on
 ```
 Host rules for the bridges: `var/render/host.nft` (rendered from `host/host.nft.tpl`).
 
-## Seen in the real run
+## Screenshots from my run
 
 ![All five VMs running](../evidence/screenshots/01-qemu-vms-running.png)
 

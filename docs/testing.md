@@ -18,7 +18,7 @@
 
 Test results of your own run are in [reports/test-results.md](../reports/test-results.md).
 
-## Results of my run
+## Screenshots from my run
 
 ![Test summary: 51 passed, 0 failed](../evidence/screenshots/12-test-results.png)
 
@@ -30,7 +30,7 @@ Test results of your own run are in [reports/test-results.md](../reports/test-re
 | 9: automatic recovery | ![VPN back](../evidence/screenshots/10-vpn-reconnect.png) |
 | E: WireGuard only on the wire | ![tcpdump](../evidence/screenshots/11-tcpdump-wireguard-only.png) |
 
-The same run step by step: [my-run.md](my-run.md).
+Same run step by step: [my-run.md](my-run.md).
 
 ## Commands worth screenshotting
 

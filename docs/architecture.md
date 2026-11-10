@@ -46,7 +46,7 @@ flowchart TB
 
 `10.60.0.10/32` is routed via `wg-remote` only while netwatch sees the peer; a **blackhole** `10.60.0.0/24` (distance 250) covers the rest, so with the VPN down traffic is discarded and never follows the default route. Two more rules drop remote-subnet traffic whose out-interface is not in list `VPN` (forward and output).
 
-## Seen in the real run
+## Screenshots from my run
 
 ![Lab is running](../evidence/screenshots/01-qemu-vms-running.png)
 
@@ -56,4 +56,4 @@ flowchart TB
 
 ![Routing table with the fail-closed blackhole](../evidence/screenshots/05-routing-table.png)
 
-All steps: [my-run.md](my-run.md).
+Steps: [my-run.md](my-run.md).
