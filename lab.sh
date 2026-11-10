@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# MikroTik CHR + WireGuard lab. Run as a normal user.
 set -euo pipefail
 cd "$(dirname "$0")"
 # shellcheck source=scripts/lib.sh
 source scripts/lib.sh
 [[ $EUID -ne 0 ]] || die "run ./lab.sh as a normal user, not root (QEMU runs unprivileged; sudo is called when needed)"
 
-wait_vm() {  # wait_vm NAME -> guest agent answers and cloud-init finished
+wait_vm() {
   local n=$1 i
   log "waiting for $n (first boot installs packages, up to ~5 min)"
   for i in $(seq 150); do
@@ -73,12 +72,12 @@ cmd_console() {
   socat -,rawer,escape=0x1d "UNIX-CONNECT:$RUN/$n.console"
 }
 
-cmd_shell() {  # run a command inside a VM through the guest agent
+cmd_shell() {
   local n=${1:?usage: ./lab.sh shell VM 'command'}; shift
   vm_exec "$n" "$*" 120
 }
 
-cmd_chr() {  # run a RouterOS command on the CHR (password from lab.env, no prompt)
+cmd_chr() {
   [[ $# -gt 0 ]] || die "usage: ./lab.sh chr '/ip route print'"
   chr_ssh "$*"
 }

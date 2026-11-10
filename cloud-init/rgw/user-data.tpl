@@ -1,5 +1,4 @@
 #cloud-config
-# simulated remote VPN gateway
 hostname: rgw
 manage_etc_hosts: true
 users:
@@ -29,7 +28,6 @@ write_files:
       PrivateKey = @@RGW_WG_PRIVKEY@@
 
       [Peer]
-      # CHR tunnel address and its LAN only
       PublicKey = @@CHR_WG_PUBKEY@@
       PresharedKey = @@WG_PSK@@
       AllowedIPs = @@CHR_VPN_IP@@/32, @@LAN_NET@@
@@ -52,10 +50,8 @@ write_files:
           type filter hook forward priority 0; policy drop;
           ct state established,related accept
           ct state invalid drop
-          # one server, SSH/HTTPS/ping, from the CHR LAN only
           iifname "wg0" oifname "remote" ip saddr @@LAN_NET@@ ip daddr @@SRV_IP@@ tcp dport { 22, 443 } accept
           iifname "wg0" oifname "remote" ip saddr @@LAN_NET@@ ip daddr @@SRV_IP@@ icmp type echo-request accept
-          # server -> Internet: web and DNS only
           iifname "remote" oifname "wan" tcp dport { 80, 443 } accept
           iifname "remote" oifname "wan" meta l4proto { tcp, udp } th dport 53 accept
           iifname "remote" oifname "wan" icmp type echo-request accept

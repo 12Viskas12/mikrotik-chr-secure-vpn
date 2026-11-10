@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Generate WireGuard + nftables config for a real server into var/remote-gateway/.
 # usage: remote-gateway-config.sh PUBLIC_IF LAN_IF SERVER_IP
 set -euo pipefail
 # shellcheck source=scripts/lib.sh

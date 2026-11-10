@@ -8,7 +8,6 @@ import os
 import re
 import sys
 
-
 def main() -> int:
     if len(sys.argv) != 3:
         print(__doc__)
@@ -36,7 +35,6 @@ def main() -> int:
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(out)
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

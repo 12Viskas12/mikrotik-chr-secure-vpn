@@ -1,5 +1,4 @@
 #cloud-config
-# LAN client 2
 hostname: client2
 manage_etc_hosts: true
 users:

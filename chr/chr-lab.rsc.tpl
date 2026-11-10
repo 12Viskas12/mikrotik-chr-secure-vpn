@@ -1,11 +1,8 @@
-# MikroTik CHR lab config (RouterOS 7.x), rendered by scripts/render.sh
 :log info "lab: import started"
 
 /system identity set name=chr-lab
 /system clock set time-zone-name=UTC
 
-# interfaces
-# matched by MAC, NIC order does not matter
 /interface ethernet
 set [find mac-address=@@CHR_MAC_MGMT@@] name=mgmt comment="MGMT - br-mgmt (admin host only)"
 set [find mac-address=@@CHR_MAC_WAN@@] name=wan comment="WAN - br-wan (simulated Internet)"
@@ -21,8 +18,6 @@ add list=WAN interface=wan
 add list=LAN interface=lan
 add list=MGMT interface=mgmt
 
-# addressing
-# MGMT keeps the factory DHCP client but never installs a default route or DNS
 :if ([:len [/ip dhcp-client find]] = 0) do={ /ip dhcp-client add interface=mgmt add-default-route=no use-peer-dns=no use-peer-ntp=no disabled=no } else={ /ip dhcp-client set [find] interface=mgmt add-default-route=no use-peer-dns=no use-peer-ntp=no disabled=no }
 
 /ip address
@@ -35,7 +30,6 @@ add dst-address=0.0.0.0/0 gateway=@@HOST_WAN_IP@@ comment="default via WAN"
 /ip dns
 set servers=@@HOST_WAN_IP@@ allow-remote-requests=yes cache-size=2048KiB
 
-# DHCP (LAN only)
 /ip pool
 add name=lan-pool ranges=@@DHCP_POOL@@
 /ip dhcp-server
@@ -46,7 +40,6 @@ add address=@@LAN_NET@@ gateway=@@CHR_LAN_IP@@ dns-server=@@CHR_LAN_IP@@ comment
 add address=@@C1_IP@@ mac-address=@@C1_MAC@@ server=lan-dhcp comment="client1"
 add address=@@C2_IP@@ mac-address=@@C2_MAC@@ server=lan-dhcp comment="client2"
 
-# WireGuard
 /interface wireguard
 add name=wg-remote listen-port=@@CHR_WG_LISTEN_PORT@@ mtu=1420 private-key="@@CHR_WG_PRIVKEY@@" comment="VPN to remote site"
 /interface wireguard peers
@@ -56,9 +49,6 @@ add address=@@CHR_VPN_IP@@/24 interface=wg-remote comment="VPN"
 /interface list member
 add list=VPN interface=wg-remote
 
-# routing / fail closed
-# 1) route to the one allowed server via the tunnel, disabled until netwatch says "up"
-# 2) blackhole for the rest of 10.60.0.0/24: never falls back to the default route
 /ip route
 add dst-address=@@SRV_IP@@/32 gateway=wg-remote distance=1 disabled=yes comment="vpn-route"
 add dst-address=@@REMOTE_NET@@ blackhole distance=250 comment="failclosed-blackhole"
@@ -68,13 +58,11 @@ add host=@@RGW_VPN_IP@@ interval=5s timeout=2s comment="VPN monitor" \
     up-script="/ip route enable [find comment=vpn-route]; :log warning \"lab: VPN UP - server route enabled\"" \
     down-script="/ip route disable [find comment=vpn-route]; :log error \"lab: VPN DOWN - server route disabled (fail closed)\""
 
-# address lists
 /ip firewall address-list
 add list=lan-authorized address=@@C1_IP@@ comment="client1"
 add list=lan-authorized address=@@C2_IP@@ comment="client2"
 add list=admin-hosts address=@@HOST_MGMT_IP@@ comment="admin address on br-mgmt"
 
-# firewall: RAW (anti-spoofing, early drops)
 /ip firewall raw
 add chain=prerouting action=accept in-interface=lan protocol=udp src-address=0.0.0.0 dst-address=255.255.255.255 dst-port=67 comment="allow DHCPDISCOVER"
 add chain=prerouting action=drop in-interface=lan src-address=!@@LAN_NET@@ log=yes log-prefix="SPOOF-LAN " comment="anti-spoof: LAN source must be LAN subnet"
@@ -85,7 +73,6 @@ add chain=prerouting action=drop in-interface=wan src-address=10.200.0.0/24 comm
 add chain=prerouting action=drop in-interface=wan dst-address=@@LAN_NET@@ log=yes log-prefix="WAN-TO-LAN " comment="no routing from WAN to LAN"
 add chain=prerouting action=drop in-interface=wan dst-address=@@REMOTE_NET@@ log=yes log-prefix="WAN-TO-REMOTE " comment="WAN -> remote network: DENY"
 
-# firewall: INPUT (to the router itself)
 /ip firewall filter
 add chain=input action=accept connection-state=established,related,untracked comment="established/related"
 add chain=input action=drop connection-state=invalid comment="drop invalid"
@@ -100,11 +87,9 @@ add chain=input action=accept in-interface=wan src-address=@@RGW_WAN_IP@@ protoc
 add chain=input action=accept in-interface=wg-remote src-address=@@RGW_VPN_IP@@ protocol=icmp comment="VPN peer ping (monitor)"
 add chain=input action=drop log=yes log-prefix="INPUT-DROP " comment="DEFAULT DENY input"
 
-# firewall: FORWARD (order matters)
 add chain=forward action=accept connection-state=established,related,untracked comment="established/related"
 add chain=forward action=drop connection-state=invalid comment="drop invalid"
 add chain=forward action=drop connection-state=new connection-nat-state=dstnat in-interface=wan comment="no port-forwards from WAN"
-# LAN -> remote server, only through the tunnel, only for authorized clients
 add chain=forward action=accept in-interface=lan out-interface=wg-remote src-address-list=lan-authorized dst-address=@@SRV_IP@@ protocol=tcp dst-port=22 comment="ALLOW LAN -> server TCP/22"
 add chain=forward action=accept in-interface=lan out-interface=wg-remote src-address-list=lan-authorized dst-address=@@SRV_IP@@ protocol=tcp dst-port=443 comment="ALLOW LAN -> server TCP/443"
 add chain=forward action=accept in-interface=lan out-interface=wg-remote src-address-list=lan-authorized dst-address=@@SRV_IP@@ protocol=icmp comment="ALLOW LAN -> server ping"
@@ -113,7 +98,6 @@ add chain=forward action=drop in-interface=lan dst-address=@@REMOTE_NET@@ log=ye
 add chain=forward action=drop dst-address=@@REMOTE_NET@@ out-interface-list=!VPN log=yes log-prefix="FAILCLOSED " comment="FAIL CLOSED: remote subnet never leaves via non-VPN interface"
 add chain=forward action=drop in-interface=wan dst-address=@@REMOTE_NET@@ log=yes log-prefix="DENY-WAN-REMOTE " comment="DENY WAN -> remote network (any)"
 add chain=forward action=drop in-interface=wg-remote log=yes log-prefix="DENY-VPN-IN " comment="no new connections from VPN into LAN or elsewhere"
-# LAN -> Internet policy: web, NTP and ping only; DNS only via the CHR (no DNS leaks)
 add chain=forward action=drop in-interface=lan out-interface=wan protocol=udp dst-port=53 log=yes log-prefix="DNS-LEAK " comment="no direct DNS to Internet"
 add chain=forward action=drop in-interface=lan out-interface=wan protocol=tcp dst-port=53 log=yes log-prefix="DNS-LEAK " comment="no direct DNS to Internet (tcp)"
 add chain=forward action=drop in-interface=lan out-interface=wan protocol=tcp dst-port=853 log=yes log-prefix="DOT-BLOCK " comment="no DNS-over-TLS bypass"
@@ -122,14 +106,11 @@ add chain=forward action=accept in-interface=lan out-interface=wan protocol=udp 
 add chain=forward action=accept in-interface=lan out-interface=wan protocol=icmp comment="LAN -> Internet ping"
 add chain=forward action=drop log=yes log-prefix="FWD-DROP " comment="DEFAULT DENY forward"
 
-# firewall: OUTPUT (router itself)
 add chain=output action=drop dst-address=@@REMOTE_NET@@ out-interface-list=!VPN log=yes log-prefix="OUT-FAILCLOSED " comment="router itself never sends remote-subnet traffic to WAN"
 
-# NAT
 /ip firewall nat
 add chain=srcnat action=masquerade src-address=@@LAN_NET@@ out-interface=wan comment="LAN -> Internet"
 
-# IPv6: off, plus default-deny in case it is switched on
 /ipv6 firewall filter
 add chain=input action=accept connection-state=established,related
 add chain=input action=drop comment="IPv6 default deny"
@@ -137,7 +118,6 @@ add chain=forward action=drop comment="IPv6 default deny"
 /ipv6 settings
 set disable-ipv6=yes
 
-# hardening
 /ip settings
 set rp-filter=loose tcp-syncookies=yes accept-source-route=no accept-redirects=no send-redirects=no secure-redirects=no
 /ip firewall connection tracking
@@ -173,12 +153,10 @@ set enabled=no
 /ip cloud
 set ddns-enabled=no update-time=no
 
-# users: admin vs read-only
 /user
 set [find name=admin] password="@@ADMIN_PASSWORD@@" address=@@HOST_MGMT_IP@@/32
 add name=audit group=read password="@@ADMIN_PASSWORD@@" address=@@HOST_MGMT_IP@@/32 comment="read-only monitoring"
 
-# logging + backups
 /system logging action
 add name=fwdisk target=disk disk-file-name=fwlog disk-lines-per-file=2000 disk-file-count=2
 /system logging

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Create bridges, TAP ports, host firewall and dnsmasq.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -14,7 +13,7 @@ mkbr() {
   ip link set "$br" up
   command -v nmcli >/dev/null 2>&1 && nmcli device set "$br" managed no >/dev/null 2>&1 || true
 }
-mktap() {  # mktap TAP BRIDGE [isolated]
+mktap() {
   local tap=$1 br=$2 iso=${3:-no}
   ip link show "$tap" >/dev/null 2>&1 || ip tuntap add dev "$tap" mode tap user "$LAB_USER"
   ip link set "$tap" master "$br"
@@ -26,19 +25,18 @@ mktap() {  # mktap TAP BRIDGE [isolated]
 
 log "creating bridges"
 for b in "$MGMT_BR" "$WAN_BR" "$LAN_BR" "$REMOTE_BR"; do mkbr "$b"; done
-# only mgmt and wan get a host IP
 ip addr replace "$HOST_MGMT_IP/24" dev "$MGMT_BR"
 ip addr replace "$HOST_WAN_IP/24" dev "$WAN_BR"
 
 log "creating TAP ports"
-mktap tap-chr-mgmt  "$MGMT_BR"
-mktap tap-chr-wan   "$WAN_BR"
-mktap tap-chr-lan   "$LAN_BR"
-mktap tap-c1        "$LAN_BR" yes
-mktap tap-c2        "$LAN_BR" yes
-mktap tap-rgw-wan   "$WAN_BR"
+mktap tap-chr-mgmt "$MGMT_BR"
+mktap tap-chr-wan "$WAN_BR"
+mktap tap-chr-lan "$LAN_BR"
+mktap tap-c1 "$LAN_BR" yes
+mktap tap-c2 "$LAN_BR" yes
+mktap tap-rgw-wan "$WAN_BR"
 mktap tap-rgw-remote "$REMOTE_BR"
-mktap tap-rsrv      "$REMOTE_BR"
+mktap tap-rsrv "$REMOTE_BR"
 
 mkdir -p "$RUN"
 if [[ ! -f "$RUN/ip_forward.prev" ]]; then cat /proc/sys/net/ipv4/ip_forward > "$RUN/ip_forward.prev"; fi

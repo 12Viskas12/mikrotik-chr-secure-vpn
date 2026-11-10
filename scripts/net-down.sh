@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Remove what net-up.sh created.
 set -uo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

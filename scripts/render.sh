@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Render all templates into var/render.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"

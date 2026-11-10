@@ -15,7 +15,6 @@ import socket
 import sys
 import time
 
-
 def rpc(sock, rf, cmd, args=None):
     msg = {"execute": cmd}
     if args is not None:
@@ -31,7 +30,6 @@ def rpc(sock, rf, cmd, args=None):
             continue
         if "return" in obj or "error" in obj:
             return obj
-
 
 def main() -> int:
     if len(sys.argv) < 3:
@@ -82,7 +80,6 @@ def main() -> int:
     if "exitcode" in st:
         return int(st["exitcode"])
     return 1 if "signal" in st else 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Shared constants and helpers (source it).
 # shellcheck disable=SC2034
 
 _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +23,6 @@ UPSTREAM_DNS="${UPSTREAM_DNS:-$(awk '/^nameserver/ && $2 !~ /^127\./ && $2 !~ /:
 UPSTREAM_DNS="${UPSTREAM_DNS:-1.1.1.1}"
 HOST_WAN_NET=192.168.100.0/24
 
-# local directories
 VAR="$ROOT/var"
 IMG="$VAR/images"
 VMD="$VAR/vm"
@@ -33,13 +31,11 @@ REND="$VAR/render"
 KEYS="$VAR/keys"
 SEED="$VAR/seed"
 
-# virtual bridges (host side)
-MGMT_BR=br-mgmt     # host <-> CHR management only
-WAN_BR=br-wan       # CHR WAN + simulated Internet; NAT to the physical uplink
-LAN_BR=br-lan       # isolated user segment, no host IP
-REMOTE_BR=br-remote # isolated segment behind the simulated remote VPN gateway
+MGMT_BR=br-mgmt
+WAN_BR=br-wan
+LAN_BR=br-lan
+REMOTE_BR=br-remote
 
-# addressing
 CHR_NAME=chr-lab
 HOST_MGMT_IP=172.31.0.1
 CHR_MGMT_IP=172.31.0.2
@@ -62,7 +58,6 @@ WG_PORT="${WG_PORT:-51820}"
 CHR_WG_LISTEN_PORT=13231
 WG_ENDPOINT_HOST="${WG_ENDPOINT_HOST:-$RGW_WAN_IP}"
 
-# MAC addresses
 CHR_MAC_MGMT=52:54:00:00:01:01
 CHR_MAC_WAN=52:54:00:00:01:02
 CHR_MAC_LAN=52:54:00:00:01:03
@@ -75,10 +70,9 @@ C2_MAC=52:54:00:00:04:02
 SSH_OPTS_STR="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5 -o PreferredAuthentications=password -o PubkeyAuthentication=no"
 set +a
 
-# helpers
-log()  { printf '\033[1;34m[lab]\033[0m %s\n' "$*"; }
+log() { printf '\033[1;34m[lab]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[1;31m[fail]\033[0m %s\n' "$*" >&2; exit 1; }
+die() { printf '\033[1;31m[fail]\033[0m %s\n' "$*" >&2; exit 1; }
 need() { local c; for c in "$@"; do command -v "$c" >/dev/null 2>&1 || die "missing command: $c (run ./lab.sh deps)"; done; }
 
 require_password() {
@@ -94,7 +88,6 @@ load_keys() {
   export CHR_WG_PRIVKEY CHR_WG_PUBKEY RGW_WG_PRIVKEY RGW_WG_PUBKEY WG_PSK
 }
 
-# VM helpers
 vm_running() { local p="$RUN/$1.pid"; [[ -f "$p" ]] && kill -0 "$(cat "$p")" 2>/dev/null; }
 vm_stop() {
   local n=$1 i
@@ -105,10 +98,8 @@ vm_stop() {
   fi
   rm -f "$RUN/$n.pid" "$RUN/$n.qga" "$RUN/$n.console"
 }
-# vm_exec VM 'cmd' [timeout]: run in the guest via the QEMU guest agent
 vm_exec() { python3 -I "$ROOT/scripts/qga.py" "$RUN/$1.qga" "$2" "${3:-60}"; }
 
-# chr_ssh 'RouterOS command'
 chr_ssh() {
   # shellcheck disable=SC2086
   sshpass -p "$ADMIN_PASSWORD" ssh $SSH_OPTS_STR "admin@$CHR_MGMT_IP" "$@"

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# VM lifecycle. Usage: vms.sh {create|start|stop|status} [chr|rgw|rsrv|client1|client2|all]
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -13,7 +12,7 @@ fi
 disk_chr()    { qemu-img create -q -f qcow2 -b "$IMG/chr-base.qcow2" -F qcow2 "$VMD/chr.qcow2" 2G; }
 disk_debian() { qemu-img create -q -f qcow2 -b "$IMG/debian-base.qcow2" -F qcow2 "$VMD/$1.qcow2" 6G; }
 
-make_seed() {  # make_seed VM  -> var/seed/VM.iso (NoCloud)
+make_seed() {
   local vm=$1 d="$REND/$vm"
   need xorriso
   mkdir -p "$SEED"
@@ -22,11 +21,11 @@ make_seed() {  # make_seed VM  -> var/seed/VM.iso (NoCloud)
     "$d/user-data" "$d/meta-data" "$d/network-config" >/dev/null 2>&1
 }
 
-nic() { # nic ID TAP MAC
+nic() {
   printf -- '-netdev tap,id=%s,ifname=%s,script=no,downscript=no -device virtio-net-pci,netdev=%s,mac=%s ' "$1" "$2" "$1" "$3"
 }
 
-launch() {  # launch NAME MEM DISK SEED NICS...
+launch() {
   local name=$1 mem=$2 disk=$3 seed=$4; shift 4
   vm_running "$name" && { log "$name already running"; return; }
   mkdir -p "$RUN"; rm -f "$RUN/$name.qga"

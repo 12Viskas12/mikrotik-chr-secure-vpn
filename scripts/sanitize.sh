@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# stdin -> stdout, blanks keys, passwords and hashes
 sed -E \
   -e 's/[A-Za-z0-9+\/]{43}=/<REDACTED-KEY>/g' \
   -e 's/(password|passwd|private-key|preshared-key|secret)=("[^"]*"|[^ ]+)/\1=<REDACTED>/Ig' \
