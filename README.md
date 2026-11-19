@@ -1,30 +1,16 @@
-# MikroTik CHR in QEMU: isolated LAN + WireGuard to a remote server
+# MikroTik CHR in QEMU: isolated LAN and WireGuard VPN
 
-A MikroTik CHR runs in QEMU/KVM and protects an isolated LAN (`10.50.0.0/24`). The LAN can reach one server (`10.60.0.10`, SSH and HTTPS) in a remote network (`10.60.0.0/24`), and only through a WireGuard tunnel. The firewall denies everything by default, and if the VPN drops the clients lose access to the remote network instead of falling back to the normal route.
+This is my solution to the task "Deploying MikroTik CHR in QEMU with an isolated network segment and VPN". A CHR virtual router sits between a small LAN (`10.50.0.0/24`) and the internet. The LAN can reach one server, `10.60.0.10`, on ports 22 and 443, and only through a WireGuard tunnel. If the tunnel goes down, access to that network stops. Nothing falls back to the normal route.
 
-Until I have a real server, the remote side is two more VMs (a gateway and the server). Switching to a real one is one setting, see [docs/deploy-on-server.md](docs/deploy-on-server.md).
+I don't have the real server yet, so the remote side is simulated with two more VMs, a gateway and the server. To use a real one, change `WG_ENDPOINT_HOST` in `lab.env`, see [docs/deploy-on-server.md](docs/deploy-on-server.md).
 
-## How it works
+## Scheme
 
-The animation plays four cases: a client using the server, a client trying things it shouldn't, the VPN going down, and intruders.
+The animation goes through four cases: a client using the server, a client trying things it shouldn't, the VPN going down, and an intruder. There is also a [clickable version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/), the same page as `docs/index.html`.
 
 ![Animated scheme](docs/img/scheme.gif)
 
-There is also a [clickable version](https://12viskas12.github.io/mikrotik-chr-secure-vpn/) (`docs/index.html`).
-
-## My run
-
-I ran the whole thing on my PC (Arch, QEMU/KVM, CHR 7.12.1) and all 51 checks passed. The steps with every command are in [docs/my-run.md](docs/my-run.md).
-
-| Lab is running | WireGuard peer |
-|---|---|
-| ![Lab is running](evidence/screenshots/01-qemu-vms-running.png) | ![WireGuard peer](evidence/screenshots/04-wireguard-handshake.png) |
-| VPN down | Test summary |
-| ![VPN down](evidence/screenshots/09-vpn-down-fail-closed.png) | ![Test summary](evidence/screenshots/12-test-results.png) |
-
-All screenshots: [docs/screenshots.md](docs/screenshots.md).
-
-## Architecture
+## Network
 
 ```
  Internet / physical network
@@ -42,66 +28,58 @@ All screenshots: [docs/screenshots.md](docs/screenshots.md).
 (admin only)
 ```
 
-| Segment | Bridge | Host IP | Who is on it |
-|---|---|---|---|
-| Management | `br-mgmt` | 172.31.0.1 | host (admin) + CHR `mgmt` only |
-| WAN / "Internet" | `br-wan` | 192.168.100.1 (NAT to uplink) | CHR `wan`, remote gateway |
-| LAN | `br-lan` | **none** | CHR `lan`, client1, client2 |
-| Remote site | `br-remote` | **none** | remote gateway, server |
+There are four Linux bridges. Only `br-mgmt` and `br-wan` have an address on the host. The host has no IP on `br-lan` and `br-remote`, so it can't reach those networks at all.
 
-Details: [docs/architecture.md](docs/architecture.md) · [docs/qemu-config.md](docs/qemu-config.md) · [docs/firewall.md](docs/firewall.md)
+| Bridge | Host IP | Connected |
+|---|---|---|
+| `br-mgmt` | 172.31.0.1 | host and the CHR management port |
+| `br-wan` | 192.168.100.1 | CHR WAN port, remote gateway; NAT to the real uplink |
+| `br-lan` | none | CHR LAN port, client1, client2 |
+| `br-remote` | none | remote gateway, server, decoy |
 
-## Quick start (Arch Linux; Debian/Ubuntu also supported)
+More in [docs/architecture.md](docs/architecture.md), [docs/qemu-config.md](docs/qemu-config.md) and [docs/firewall.md](docs/firewall.md).
+
+## Running it
+
+You need a Linux machine with KVM. I used Arch. `./lab.sh deps` also knows apt, but I haven't tried Debian or Ubuntu.
 
 ```bash
-git clone https://github.com/12Viskas12/mikrotik-chr-secure-vpn && cd mikrotik-chr-secure-vpn
-cp lab.env.example lab.env && $EDITOR lab.env   # set ADMIN_PASSWORD (letters+digits)
-./lab.sh deps        # installs qemu, nftables, dnsmasq, wireguard-tools, ...
-sudo usermod -aG kvm "$USER"                      # once, then log out/in
-./lab.sh up          # keys, images, bridges, VMs, VPN (first run: ~10 min, downloads images)
-./lab.sh test        # 10 required checks + extras -> reports/test-results.md
-./lab.sh backup      # sanitised CHR export -> docs/chr-export.rsc
-./lab.sh down        # remove everything from the host
+git clone https://github.com/12Viskas12/mikrotik-chr-secure-vpn
+cd mikrotik-chr-secure-vpn
+cp lab.env.example lab.env      # set ADMIN_PASSWORD, letters and digits only
+./lab.sh deps
+sudo usermod -aG kvm "$USER"    # once, then log out and in
+./lab.sh up                     # the first run downloads images, about 10 minutes
+./lab.sh test
+./lab.sh backup
+./lab.sh down
 ```
 
-The same steps with screenshots: [docs/my-run.md](docs/my-run.md).
+`backup` saves a copy of the CHR config without secrets to `docs/chr-export.rsc`. To log in to the CHR from the host: `ssh admin@172.31.0.2`. It only accepts the host address 172.31.0.1.
 
-WinBox/SSH to the CHR from the host: `ssh admin@172.31.0.2` (only the host address `172.31.0.1` is accepted).
+## My run
 
-## What is implemented (mapped to the task)
+I ran everything on my PC (Arch, QEMU/KVM, CHR 7.12.1) and 51 checks passed. The commands step by step are in [docs/my-run.md](docs/my-run.md).
 
-| Task stage | Implementation |
+| Lab is running | WireGuard peer |
 |---|---|
-| I. QEMU + CHR | `scripts/fetch-images.sh`, `scripts/vms.sh`: CHR 2 vCPU, 1 GB RAM, 2 GB disk, SeaBIOS, virtio NICs; WinBox/SSH only from `172.31.0.1` |
-| II. WAN | static WAN IP, default route, masquerade; raw/forward rules block WAN to LAN; host forwards only `br-wan` to uplink with WAN-range sources |
-| III. Isolated LAN | `br-lan` without host IP, nftables **bridge** MAC/port allow-list, isolated client ports, ARP `reply-only`, DHCP static leases |
-| IV. VPN | WireGuard + pre-shared key, `persistent-keepalive`, peer `allowed-address` = peer + one server only |
-| V. Server access | only `src lan-authorized -> 10.60.0.10 tcp/22,443 (+ping)`; 3389 and rest of `10.60.0.0/24` denied; WAN to remote denied |
-| VI. Policy | default deny on input/forward, anti-spoofing (raw), services off, DHCP on LAN only, firewall logging to disk, **fail closed** (blackhole route + out-interface rule + netwatch) |
-| VII. Tests | `scripts/run-tests.sh`: ping, nmap, traceroute, tcpdump leak capture, rogue VM, VPN down/up |
-| Bonus | separate mgmt segment, admin/read-only users, MAC/IP pinning, netwatch VPN monitor, auto route disable, daily config export + `backup`, DNS-leak and IPv6 checks, drop logging |
+| ![Lab is running](evidence/screenshots/01-qemu-vms-running.png) | ![WireGuard peer](evidence/screenshots/04-wireguard-handshake.png) |
+| VPN down | Test summary |
+| ![VPN down](evidence/screenshots/09-vpn-down-fail-closed.png) | ![Test summary](evidence/screenshots/12-test-results.png) |
 
-## Repository layout
+The rest of the screenshots are in [docs/screenshots.md](docs/screenshots.md), the test table is in [reports/test-results.md](reports/test-results.md), and the short report is [reports/final-report.md](reports/final-report.md).
 
-| Path | Content |
-|---|---|
-| `lab.sh` | single entry point (`up`, `down`, `test`, `backup`, ...) |
-| `host/` | host nftables (NAT, forward policy, **L2 bridge filter**) and dnsmasq templates |
-| `chr/chr-lab.rsc.tpl` | full RouterOS configuration template |
-| `cloud-init/` | remote gateway, server, clients |
-| `scripts/` | automation, tests, sanitiser, real-server helper |
-| `docs/` | my-run walkthrough, architecture, firewall table, testing, security findings, deployment |
-| `reports/` | final report and generated `test-results.md` |
-| `evidence/` | `screenshots/`, `sanitized-logs/` |
+## What is where
 
-## Evidence
+- `lab.sh` runs everything (`up`, `down`, `test`, `backup` and so on)
+- `chr/chr-lab.rsc.tpl` is the RouterOS config
+- `host/` has the host firewall (nftables) and dnsmasq templates
+- `cloud-init/` has the setup for the remote gateway, the server and the clients
+- `scripts/` has the automation and the tests
+- `docs/` has the documentation, `evidence/` the screenshots and logs
 
-Walkthrough of my run: [docs/my-run.md](docs/my-run.md) · screenshots: [docs/screenshots.md](docs/screenshots.md) · tests: [docs/testing.md](docs/testing.md), [reports/test-results.md](reports/test-results.md) · report: [reports/final-report.md](reports/final-report.md).
+## Notes
 
-## Repository security
-
-Never commit `lab.env`, `var/`, keys, disk images. `.gitignore`, `scripts/pre-push-check.sh` and CI (gitleaks) enforce this; evidence passes through `scripts/sanitize.sh`.
-
-## Limits
-
-CHR runs on the free licence (1 Mbit/s per interface), enough for the lab. The RouterOS script targets RouterOS 7.x; syntax of the first import should be confirmed on your CHR version (see [docs/testing.md](docs/testing.md)).
+- The free CHR licence limits every interface to 1 Mbit/s. That is enough here.
+- The RouterOS config was written for 7.x and tested on 7.12.1. On a newer version the import may stop on a changed command, usually netwatch or the blackhole route. The error shows the line.
+- `lab.env`, `var/` and the keys are in `.gitignore`. Before a push I run `scripts/pre-push-check.sh`.

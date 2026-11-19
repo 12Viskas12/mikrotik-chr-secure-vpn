@@ -1,6 +1,6 @@
-# Architecture and addressing
+# Architecture
 
-## Logical scheme
+## Scheme
 
 ```mermaid
 flowchart TB
@@ -34,17 +34,17 @@ flowchart TB
 | Remote gateway | wan / remote / wg0 | 192.168.100.10 / 10.60.0.1 / 10.200.0.1 | 52:54:00:00:02:01 / :02 |
 | Server | remote | 10.60.0.10 (+ decoy 10.60.0.20) | 52:54:00:00:03:01 |
 
-## Why the isolation holds
+## How the isolation works
 
-1. **No L3 presence of the host** on `br-lan` / `br-remote` (no IP, IPv6 disabled) so the host cannot talk to them.
-2. **Host forward policy**: only `br-wan -> uplink` with a WAN-range source; any other forward from/to a lab bridge is dropped. The host cannot be used to bypass the CHR.
-3. **L2 filter (nftables bridge family)**: frames entering `br-lan` from any port other than the CHR LAN port and the two client ports are dropped, as are frames leaving to unknown ports; MAC pinning per port. A foreign VM plugged into `br-lan` is silent in both directions.
-4. **Isolated bridge ports** for the clients: clients cannot talk to each other, only to the CHR.
-5. **CHR**: ARP `reply-only` + DHCP static leases + raw anti-spoof rules + default deny.
+The host has no IP address on `br-lan` and `br-remote` and IPv6 is switched off there, so it can't talk to those networks. It also forwards only one thing, traffic from `br-wan` to the uplink with a source address from the WAN range. Everything else going through a lab bridge is dropped, so the host can't be used to get around the CHR.
+
+On top of that there is an nftables filter in the bridge family. Frames coming into `br-lan` from any port except the CHR LAN port and the two client ports are dropped, and each port is pinned to its MAC address. A foreign VM plugged into `br-lan` can neither send nor receive anything. The client ports are also marked isolated, so client1 and client2 only talk to the CHR.
+
+The CHR adds its own checks: ARP `reply-only`, static DHCP leases, anti-spoofing rules in raw and default deny.
 
 ## Fail closed
 
-`10.60.0.10/32` is routed via `wg-remote` only while netwatch sees the peer; a **blackhole** `10.60.0.0/24` (distance 250) covers the rest, so with the VPN down traffic is discarded and never follows the default route. Two more rules drop remote-subnet traffic whose out-interface is not in list `VPN` (forward and output).
+The route to `10.60.0.10/32` through `wg-remote` is enabled only while netwatch sees the peer answer. A blackhole route for `10.60.0.0/24` with distance 250 covers the rest. When the VPN is down, packets for that network are thrown away instead of following the default route. Two more rules drop traffic to the remote network that would leave through an interface outside the `VPN` list, one in forward and one in output.
 
 ## Screenshots from my run
 

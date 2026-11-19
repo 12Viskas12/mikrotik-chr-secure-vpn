@@ -1,27 +1,28 @@
 # Moving the lab to a server
 
-## Scenario A: whole lab on the server (simulated remote side included)
+## A: the whole lab on a server
 
-Needs a Linux server with KVM (bare metal or nested virtualisation), root/sudo, and Internet access.
+The simulated remote side comes along. You need a Linux server with KVM (bare metal or nested virtualisation), sudo and internet access.
 
 ```bash
-git clone <repo> && cd mikrotik-chr-secure-vpn
-cp lab.env.example lab.env && $EDITOR lab.env     # ADMIN_PASSWORD, UPLINK_IFACE (server's public NIC)
+git clone https://github.com/12Viskas12/mikrotik-chr-secure-vpn
+cd mikrotik-chr-secure-vpn
+cp lab.env.example lab.env      # set ADMIN_PASSWORD and UPLINK_IFACE, the public NIC of the server
 ./lab.sh deps && ./lab.sh up && ./lab.sh test
 ```
 
-Checks before you start: `ls /dev/kvm`; the user is in group `kvm`; the host firewall (ufw/firewalld/Docker) must not drop forwarding between `br-wan` and the uplink (add an accept for it). The lab bridges are private to the server; nothing is exposed publicly. Do not publish ports 22/8291 of the CHR.
+Before you start, check that `/dev/kvm` exists and your user is in the `kvm` group. If ufw, firewalld or Docker drops forwarded traffic, add an accept rule for `br-wan` to the uplink. The lab bridges stay private to the server. Don't publish ports 22 and 8291 of the CHR.
 
-## Scenario B: CHR in the lab, real remote gateway/server
+## B: CHR in the lab, a real remote gateway and server
 
-1. On the machine that runs the CHR generate keys: `./lab.sh keys`.
-2. Generate the server-side config: `scripts/remote-gateway-config.sh <public_if> <lan_if> 10.60.0.10`, copy `var/remote-gateway/wg0.conf` to `/etc/wireguard/` on the remote gateway, load `nftables-rgw.conf`, enable forwarding, `wg-quick up wg0`.
-3. Open UDP `51820` on the remote gateway to the CHR's public address only.
-4. In `lab.env` set `WG_ENDPOINT_HOST=<remote gateway public IP>`.
-5. The CHR firewall input rule accepts WireGuard only from `RGW_WAN_IP` (default `192.168.100.10`). Adjust that rule in `chr/chr-lab.rsc.tpl` if the real gateway's source address differs (e.g. your NAT address).
-6. `./lab.sh render && ./lab.sh reset-chr`, then `./lab.sh test` (tests 8/9 need shell access to the remote gateway; skip or run manually).
-7. Make sure the real server `10.60.0.10` has the gateway as its route back to `10.50.0.0/24`.
+1. On the machine that runs the CHR, generate the keys with `./lab.sh keys`.
+2. Run `scripts/remote-gateway-config.sh <public_if> <lan_if> 10.60.0.10`. Copy `var/remote-gateway/wg0.conf` to `/etc/wireguard/` on the remote gateway, load `nftables-rgw.conf`, turn on forwarding and run `wg-quick up wg0`.
+3. On the gateway, open UDP 51820 only for the public address of the CHR.
+4. Set `WG_ENDPOINT_HOST` in `lab.env` to the public IP of the gateway.
+5. The CHR input rule accepts WireGuard only from `RGW_WAN_IP`, by default `192.168.100.10`. If the real gateway reaches the CHR from another address (for example behind NAT), change that rule in `chr/chr-lab.rsc.tpl`.
+6. Run `./lab.sh render && ./lab.sh reset-chr`, then `./lab.sh test`. Tests 8 and 9 need a shell on the remote gateway, so skip them or do them by hand.
+7. Make sure the real server `10.60.0.10` routes `10.50.0.0/24` back through the gateway.
 
 ## Backups
 
-`./lab.sh backup` stores a sanitised export in `docs/chr-export.rsc`; the CHR also exports daily on its own (`auto-export.rsc`).
+`./lab.sh backup` saves a config export without secrets to `docs/chr-export.rsc`. The CHR also exports its config once a day on its own (`auto-export.rsc`).

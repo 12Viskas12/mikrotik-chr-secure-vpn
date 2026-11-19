@@ -1,32 +1,32 @@
-# Firewall rules (CHR) - order matters
+# Firewall rules on the CHR
 
-Full export: `docs/chr-export.rsc` (after `./lab.sh backup`). Source of truth: `chr/chr-lab.rsc.tpl`.
+The full export is in `docs/chr-export.rsc` (made by `./lab.sh backup`). The source is `chr/chr-lab.rsc.tpl`. Order matters, rules are checked from the top.
 
-## Required access matrix
+## Who can reach what
 
-| Source | Destination | Port | Action | Rule |
+| Source | Destination | Port | Action | Chain |
 |---|---|---|---|---|
-| lan-authorized (10.50.0.10/.11) | 10.60.0.10 | TCP 22 | ALLOW | forward, out=wg-remote |
-| lan-authorized | 10.60.0.10 | TCP 443 | ALLOW | forward, out=wg-remote |
-| 10.50.0.0/24 | 10.60.0.10 | TCP 3389 | DENY (logged `DENY-RDP`) | forward |
-| 10.50.0.0/24 | 10.60.0.0/24 | any | DENY (logged `DENY-REMOTE`) | forward |
-| WAN | 10.60.0.0/24 | any | DENY (raw + forward) | raw prerouting, forward |
-| WAN | 10.50.0.0/24 | any | DENY (raw) | raw prerouting |
+| 10.50.0.10 and .11 | 10.60.0.10 | TCP 22 | allow | forward, out wg-remote |
+| 10.50.0.10 and .11 | 10.60.0.10 | TCP 443 | allow | forward, out wg-remote |
+| 10.50.0.0/24 | 10.60.0.10 | TCP 3389 | deny, log `DENY-RDP` | forward |
+| 10.50.0.0/24 | 10.60.0.0/24 | any | deny, log `DENY-REMOTE` | forward |
+| WAN | 10.60.0.0/24 | any | deny | raw, forward |
+| WAN | 10.50.0.0/24 | any | deny | raw |
 
-The allow list is intentionally narrower than the task table (`lan-authorized` instead of the whole `10.50.0.0/24`): an unknown address in the LAN subnet cannot reach the server either.
+The task says the whole `10.50.0.0/24` may use the server. I allowed only the two known clients (the `lan-authorized` list), so an unknown address in the same subnet can't get in either.
 
 ## Chains
 
-* **raw/prerouting**: DHCPDISCOVER exception, anti-spoofing (LAN source must be `10.50.0.0/24`, mgmt source must be the admin host, WAN may not use LAN/remote/VPN sources), WAN to LAN/remote dropped early.
-* **input**: established, invalid drop, SSH+WinBox only from `172.31.0.1` on `mgmt`, LAN gets DHCP/DNS/ping only, WAN gets WireGuard from the known peer only, then **drop + log**.
-* **forward**: established, invalid drop, no dstnat from WAN, the allow/deny matrix above, fail-closed rule, no new connections from the VPN, LAN to Internet only web/NTP/ping (DNS only via the CHR, DoT blocked), then **drop + log**.
-* **output**: remote-subnet traffic may only leave via `VPN` interfaces.
-* **NAT**: single masquerade for LAN to WAN. No NAT on the tunnel (the remote gateway routes `10.50.0.0/24` back through WireGuard).
-* **IPv6**: disabled, plus default-deny rules in case it is enabled.
+- raw prerouting: drops spoofed sources. A LAN packet must come from `10.50.0.0/24`, a management packet from the admin host, and WAN may not use LAN, remote or VPN addresses. DHCP discover is let through first. WAN traffic to the LAN and the remote network is dropped here.
+- input: established allowed, invalid dropped. SSH and WinBox only from `172.31.0.1` on `mgmt`. The LAN gets DHCP, DNS and ping. WAN gets WireGuard from the known peer. Everything else is dropped and logged.
+- forward: established allowed, invalid dropped, no dstnat from WAN, then the table above. LAN to the Internet is only web, NTP and ping. DNS goes only to the CHR and DoT is blocked. The end of the chain drops and logs.
+- output: traffic to the remote network may leave only through `VPN` interfaces.
+- NAT: one masquerade for LAN to WAN. The tunnel isn't NATed, the remote gateway routes `10.50.0.0/24` back into WireGuard.
+- IPv6 is off, with default deny rules in case someone turns it on.
 
-## Hardening list
+## Hardening
 
-Telnet/FTP/HTTP/HTTPS/API disabled; SSH and WinBox restricted to `172.31.0.1/32`; MAC-server, neighbor discovery, bandwidth server, proxy, SOCKS, UPnP, cloud DDNS off; strong SSH crypto; read-only `audit` user; firewall log to disk file `fwlog`; daily `/export`.
+Telnet, FTP, HTTP, HTTPS and the API are disabled. SSH and WinBox accept only `172.31.0.1/32`. MAC server, neighbor discovery, bandwidth server, proxy, SOCKS, UPnP and cloud DDNS are off. SSH uses strong crypto, there is a read-only `audit` user, the firewall log goes to a file `fwlog`, and a scheduler exports the config every day.
 
 ## Screenshots from my run
 
